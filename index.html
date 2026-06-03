@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<meta name="theme-color" content="#1d2433" />
+<title>Stellenwerte · Mehrsystemblöcke</title>
+<style>
+/* ============================================================
+   STELLENWERTSYSTEM — Tally-Counter + Dienes-Blöcke (0–9999)
+   Eine Quelle der Wahrheit: die Zahl. Zwei Ansichten, bidirektional.
+   ============================================================ */
+:root{
+  --bg0:#10151f; --bg1:#1b2433; --bg2:#222d40;
+  --ink:#eef3fb; --ink-dim:#9fb0c8; --line:#33415c;
+  --frame:#161d29; --frame-edge:#2c3850;
+
+  /* Platzfarben */
+  --E:#34c759; --E2:#23913f; --E3:#1c733300;
+  --Z:#0a84ff; --H:#ff9f0a; --T:#ff3b30;
+
+  --dur:.6s;
+  --ease:cubic-bezier(.34,1.2,.4,1);
+
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0; height:100%;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(120% 80% at 50% -10%, #243049 0%, var(--bg0) 60%) fixed;
+  display:flex; flex-direction:column;
+  min-height:100%;
+  padding:calc(var(--safe-t)) var(--safe-r) var(--safe-b) var(--safe-l);
+  overflow-x:hidden;
+  -webkit-user-select:none; user-select:none;
+  touch-action:manipulation;
+}
+h1,h2,p{margin:0;}
+
+/* ---------- Kopf ---------- */
+.app-head{
+  text-align:center; padding:10px 14px 4px;
+}
+.app-head h1{
+  font-size:clamp(17px,4.6vw,24px); font-weight:800; letter-spacing:.3px;
+  display:flex; align-items:center; justify-content:center; gap:.45em;
+}
+.app-head .sub{font-size:12px; color:var(--ink-dim); margin-top:2px; font-weight:600;}
+
+/* ---------- Layout ---------- */
+.stage{
+  flex:1 1 auto;
+  display:flex; flex-direction:column;
+  gap:8px;
+  padding:6px 8px 10px;
+  max-width:760px; width:100%; margin:0 auto;
+}
+
+/* ===========================================================
+   STELLENWERT-TABELLE (Dienes-Blöcke)
+   =========================================================== */
+.table-wrap{
+  position:relative;
+  background:linear-gradient(180deg,#1b2435,#141b27);
+  border:1px solid var(--frame-edge);
+  border-radius:18px;
+  padding:8px 8px 6px;
+  box-shadow:0 10px 30px -12px #000a, inset 0 1px 0 #ffffff10;
+}
+.cols{
+  display:grid; grid-template-columns:repeat(4,1fr);
+  gap:6px;
+}
+.col{
+  display:flex; flex-direction:column;
+  min-width:0;
+}
+.col-head{
+  text-align:center; padding:2px 0 5px;
+}
+.col-head .name{
+  font-size:clamp(9px,2.3vw,12px); font-weight:800; letter-spacing:.2px;
+  text-transform:uppercase;
+}
+.col-head .digit{
+  font-variant-numeric:tabular-nums;
+  font-size:clamp(20px,6.5vw,30px); font-weight:900; line-height:1;
+  margin-top:1px;
+}
+.col[data-p="0"] .name,.col[data-p="0"] .digit{color:var(--E);}
+.col[data-p="1"] .name,.col[data-p="1"] .digit{color:var(--Z);}
+.col[data-p="2"] .name,.col[data-p="2"] .digit{color:var(--H);}
+.col[data-p="3"] .name,.col[data-p="3"] .digit{color:var(--T);}
+
+.frame{
+  position:relative;
+  flex:1 1 auto;
+  height:clamp(180px,40vh,300px);
+  border-radius:12px;
+  background:
+    linear-gradient(180deg,#0d121c,#101622 60%, #0c1019);
+  border:1px solid var(--frame-edge);
+  box-shadow:inset 0 2px 10px #000a, inset 0 -10px 18px -10px #000c;
+  overflow:hidden;
+}
+.frame::after{ /* Bodenlinie */
+  content:""; position:absolute; left:8%; right:8%; bottom:9px; height:2px;
+  border-radius:2px;
+  background:linear-gradient(90deg,#fff0,#ffffff22,#fff0);
+}
+/* lokales Umbündel-Feedback */
+.frame.flash{ animation:frameFlash .6s ease; }
+@keyframes frameFlash{
+  0%{box-shadow:inset 0 0 0 2px #fff0, inset 0 2px 10px #000a;}
+  25%{box-shadow:inset 0 0 22px 2px var(--flashc), inset 0 0 0 2px var(--flashc);}
+  100%{box-shadow:inset 0 0 0 2px #fff0, inset 0 2px 10px #000a;}
+}
+.badge{
+  position:absolute; top:7px; left:50%; transform:translate(-50%,-6px);
+  background:var(--flashc,#fff); color:#08101e;
+  font-weight:900; font-size:12px; padding:3px 9px; border-radius:999px;
+  box-shadow:0 6px 16px -4px #000a, inset 0 1px 0 #ffffff80;
+  opacity:0; pointer-events:none; white-space:nowrap; z-index:9999;
+}
+.badge.show{ animation:badgePop .9s var(--ease); }
+@keyframes badgePop{
+  0%{opacity:0; transform:translate(-50%,4px) scale(.6);}
+  18%{opacity:1; transform:translate(-50%,-6px) scale(1.06);}
+  70%{opacity:1; transform:translate(-50%,-9px) scale(1);}
+  100%{opacity:0; transform:translate(-50%,-22px) scale(.95);}
+}
+
+.col-foot{
+  display:flex; gap:5px; padding:6px 0 1px; justify-content:center;
+}
+.pbtn{
+  flex:1 1 0; min-width:0;
+  height:38px; border-radius:10px; border:1px solid #ffffff18;
+  font-size:19px; font-weight:900; color:#fff;
+  background:linear-gradient(180deg,#2c3850,#1c2536);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; user-select:none;
+  box-shadow:0 3px 0 #0006, inset 0 1px 0 #ffffff30;
+  transition:transform .06s, box-shadow .06s, opacity .15s, filter .15s;
+}
+.pbtn:active,.pbtn.kp{ transform:translateY(2px); box-shadow:0 1px 0 #0006, inset 0 1px 0 #ffffff30; }
+.minibtn.kp{ transform:translateY(2px); box-shadow:0 1px 0 #8794a8, inset 0 1px 0 #fff; }
+.pbtn.plus[data-p="0"]{background:linear-gradient(180deg,#3ad668,#1f9b41);}
+.pbtn.plus[data-p="1"]{background:linear-gradient(180deg,#3aa0ff,#0667d6);}
+.pbtn.plus[data-p="2"]{background:linear-gradient(180deg,#ffb53d,#e07d00);}
+.pbtn.plus[data-p="3"]{background:linear-gradient(180deg,#ff6258,#d81e15);}
+.pbtn.minus{ background:linear-gradient(180deg,#46556f,#2a3447); }
+.pbtn[disabled]{ opacity:.32; filter:grayscale(.6); pointer-events:none; box-shadow:0 1px 0 #0004 inset; }
+
+/* ===========================================================
+   3D-BLÖCKE — isometrisch, orthographisch (kein perspective)
+   =========================================================== */
+#blocks{
+  position:absolute; inset:0; pointer-events:none; z-index:5;
+}
+.block{
+  position:absolute; left:0; top:0; width:0; height:0;
+  transform-origin:0 0;
+  will-change:transform;
+  transition:transform var(--dur) var(--ease), opacity .25s ease;
+}
+.block .box{
+  position:absolute; left:0; top:0;
+  transform-style:preserve-3d;
+  /* feste isometrische, orthographische Ausrichtung */
+  transform:translate(-50%,-50%) rotateX(-26deg) rotateY(-34deg);
+}
+.face{
+  position:absolute; left:50%; top:50%;
+  background:var(--front);
+  outline:.6px solid #00000028;
+  transition:background var(--dur) ease, border-color var(--dur) ease;
+  backface-visibility:hidden;
+}
+.face.top{ background:var(--top); }
+.face.right{ background:var(--side); }
+.face.front{ background:var(--front); }
+
+/* Platzfarben als Flächentöne (top hell · front · side dunkel) */
+.block.p0{ --top:#7DEB9A; --front:#34c759; --side:#1f8f41; }
+.block.p1{ --top:#6BB8FF; --front:#0a84ff; --side:#0659b0; }
+.block.p2{ --top:#FFC768; --front:#ff9f0a; --side:#c2740a; }
+.block.p3{ --top:#FF8079; --front:#ff3b30; --side:#bf241c; }
+
+/* Gitterlinien (Hunderter-Platte & Tausender-Würfel): 10er-Unterteilung */
+.face.grid{
+  background-image:
+    repeating-linear-gradient(0deg,  #00000033 0 1px, #0000 1px var(--g)),
+    repeating-linear-gradient(90deg, #00000033 0 1px, #0000 1px var(--g));
+  background-color:var(--front);
+}
+.face.grid.top{ background-color:var(--top); }
+.face.grid.right{ background-color:var(--side); }
+/* feine Trennlinien auf Einzelwürfeln */
+.cube .face{ outline:.7px solid #0006; }
+.cube .face.top{ box-shadow:inset 0 0 0 1px #ffffff22; }
+
+/* ===========================================================
+   TALLY-COUNTER (Klicker mit Odometer)
+   =========================================================== */
+.counter{
+  margin:2px auto 4px; width:100%; max-width:430px;
+  display:flex; align-items:center; gap:14px;
+  padding:12px 14px;
+  border-radius:22px;
+  background:
+    linear-gradient(180deg,#e9edf4,#aab4c6 55%,#7f8aa0);
+  box-shadow:
+    0 14px 30px -12px #000b,
+    inset 0 2px 1px #ffffffcc,
+    inset 0 -6px 10px -4px #00000055,
+    inset 0 0 0 1px #ffffff40;
+}
+.counter .left{ display:flex; flex-direction:column; gap:9px; align-items:center; }
+.odometer{
+  display:flex; gap:3px; padding:8px 9px;
+  background:linear-gradient(180deg,#11161f,#1c2433);
+  border-radius:10px;
+  box-shadow:
+    inset 0 4px 8px #000c, inset 0 -2px 4px #ffffff10,
+    0 1px 0 #ffffff90;
+  border:1px solid #05080d;
+}
+.wheel{
+  position:relative;
+  width:30px; height:46px; overflow:hidden;
+  border-radius:5px;
+  background:linear-gradient(180deg,#fbfdff,#dde4ee 50%,#fbfdff);
+  box-shadow:inset 0 8px 8px -6px #0009, inset 0 -8px 8px -6px #0009, inset 0 0 0 1px #0003;
+}
+.wheel::before,.wheel::after{
+  content:""; position:absolute; left:0; right:0; height:14px; z-index:3; pointer-events:none;
+}
+.wheel::before{ top:0; background:linear-gradient(#0006,#0000); }
+.wheel::after{ bottom:0; background:linear-gradient(#0000,#0006); }
+.wheel .strip{
+  position:absolute; left:0; right:0; top:0;
+  display:flex; flex-direction:column;
+  transition:transform .5s var(--ease);
+}
+.wheel .strip span{
+  height:46px; display:flex; align-items:center; justify-content:center;
+  font:900 30px/1 "SF Mono",ui-monospace,Menlo,monospace;
+  color:#10161f; font-variant-numeric:tabular-nums;
+}
+.wheel.w3 .strip span{ color:var(--T); }
+.wheel.w2 .strip span{ color:var(--H); }
+.wheel.w1 .strip span{ color:var(--Z); }
+.wheel.w0 .strip span{ color:var(--E); }
+
+.counter .mini{ display:flex; gap:9px; }
+.minibtn{
+  width:46px; height:34px; border-radius:9px; border:none;
+  font-size:18px; font-weight:900; color:#22303f;
+  background:linear-gradient(180deg,#fdfefe,#c4cdda);
+  box-shadow:0 3px 0 #8794a8, inset 0 1px 0 #fff;
+  cursor:pointer;
+  transition:transform .06s, box-shadow .06s, opacity .15s;
+}
+.minibtn:active{ transform:translateY(2px); box-shadow:0 1px 0 #8794a8, inset 0 1px 0 #fff; }
+.minibtn.reset{ font-size:15px; }
+.minibtn[disabled]{ opacity:.4; pointer-events:none; }
+
+/* großer Druckknopf +1 */
+.bigbtn{
+  position:relative; flex:0 0 auto;
+  width:104px; height:104px; border-radius:50%;
+  border:none; cursor:pointer; color:#fff;
+  font-size:30px; font-weight:900; letter-spacing:.5px;
+  background:
+    radial-gradient(120% 120% at 35% 25%, #ff8a5c, #ff5d3a 45%, #e23d23 75%, #b62a16);
+  box-shadow:
+    0 12px 0 #8e2113,
+    0 16px 22px -6px #000a,
+    inset 0 3px 6px #ffffff80,
+    inset 0 -10px 16px -6px #00000070;
+  transition:transform .08s ease, box-shadow .08s ease, opacity .2s;
+  display:flex; align-items:center; justify-content:center; flex-direction:column;
+}
+.bigbtn .lbl{ font-size:13px; font-weight:800; opacity:.92; letter-spacing:.5px; margin-top:-3px;}
+.bigbtn:active, .bigbtn.press{
+  transform:translateY(9px);
+  box-shadow:0 3px 0 #8e2113, 0 6px 10px -4px #000a, inset 0 3px 6px #ffffff80, inset 0 -8px 14px -6px #00000070;
+}
+.bigbtn[disabled]{ opacity:.45; filter:grayscale(.4); pointer-events:none;
+  box-shadow:0 4px 0 #8e2113, inset 0 3px 6px #ffffff60; transform:translateY(7px);}
+
+.hint{ text-align:center; font-size:11.5px; color:var(--ink-dim); padding:2px 12px 8px; font-weight:600;}
+
+@media (max-width:380px){
+  .bigbtn{ width:90px; height:90px; font-size:26px;}
+  .wheel{ width:26px; height:40px;}
+  .wheel .strip span{ height:40px; font-size:26px;}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{ transition-duration:0s !important; animation-duration:0s !important; }
+}
+</style>
+</head>
+<body>
+  <header class="app-head">
+    <h1>🔢 Stellenwerte</h1>
+    <div class="sub">Tausender · Hunderter · Zehner · Einer — von 0 bis 9999</div>
+  </header>
+
+  <main class="stage">
+    <section class="table-wrap">
+      <div class="cols" id="cols"><!-- 4 Spalten via JS --></div>
+      <div id="blocks"></div>
+    </section>
+
+    <section class="counter" id="counter">
+      <div class="left">
+        <div class="odometer" id="odometer"><!-- 4 Räder via JS --></div>
+        <div class="mini">
+          <button class="minibtn" id="btnMinus" aria-label="minus eins">−1</button>
+          <button class="minibtn reset" id="btnReset" aria-label="zurücksetzen">↺</button>
+        </div>
+      </div>
+      <button class="bigbtn" id="btnPlus" aria-label="plus eins">+1<span class="lbl">drücken</span></button>
+    </section>
+    <p class="hint">Klicker drücken oder unter einer Spalte +/− tippen — beide Ansichten zeigen dieselbe Zahl.<br>Tastatur: ↑ +1 · ↓ −1 · 1·2·3·4 erhöhen, q·w·e·r verringern (Tausender·Hunderter·Zehner·Einer).</p>
+  </main>
+
+<script>
+"use strict";
+(function(){
+/* =========================================================================
+   0. Grundlagen
+   ========================================================================= */
+const PLACES = [
+  {p:0, key:'E', name:'Einer',     mag:1,    type:'cube'},
+  {p:1, key:'Z', name:'Zehner',    mag:10,   type:'rod' },
+  {p:2, key:'H', name:'Hunderter', mag:100,  type:'plate'},
+  {p:3, key:'T', name:'Tausender', mag:1000, type:'tcube'},
+];
+const FLASHC = ['#34c759','#0a84ff','#ff9f0a','#ff3b30'];
+const U = 22;                 // Basis-Kantenlänge eines Einerwürfels (px)
+const MAXSCALE = 1.0;
+const reduced = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+// Isometrische, orthographische Projektion (rotateX(-26) rotateY(-34))
+// Bildschirm-Offset (px) je Welt-Einheit entlang der Achsen:
+const AX = {x:0.8290, y:0.2448};   // +X (rechts)
+const AY = {x:0.0000, y:0.8988};   // +Y (nach unten)
+const AZ = {x:-0.5592,y:0.3631};   // +Z (Tiefe, zum Betrachter)
+const DEPTH = (lx,ly,lz)=> 0.5025*lx - 0.4384*ly + 0.7448*lz;  // größer = vorne
+function proj(lx,ly,lz){
+  return {
+    x: U*(AX.x*lx + AY.x*ly + AZ.x*lz),
+    y: U*(AX.y*lx + AY.y*ly + AZ.y*lz),
+  };
+}
+
+/* =========================================================================
+   1. DOM-Aufbau
+   ========================================================================= */
+const colsEl = document.getElementById('cols');
+const blocksEl = document.getElementById('blocks');
+const frames = [], digitEls = [], plusBtns = [], minusBtns = [], badgeEls = [];
+
+// Spaltenreihenfolge im UI: Tausender..Einer (links→rechts)
+const ORDER = [3,2,1,0];
+ORDER.forEach(p=>{
+  const info = PLACES[p];
+  const col = document.createElement('div');
+  col.className='col'; col.dataset.p=p;
+  col.innerHTML =
+    `<div class="col-head"><div class="name">${info.name}</div><div class="digit" id="dig${p}">0</div></div>
+     <div class="frame" id="frame${p}"><div class="badge" id="badge${p}">🔁 +1</div></div>
+     <div class="col-foot">
+       <button class="pbtn minus" data-p="${p}" data-d="-1">−</button>
+       <button class="pbtn plus"  data-p="${p}" data-d="1">+</button>
+     </div>`;
+  colsEl.appendChild(col);
+  frames[p]=col.querySelector('.frame');
+  digitEls[p]=col.querySelector('.digit');
+  badgeEls[p]=col.querySelector('.badge');
+  frames[p].style.setProperty('--flashc',FLASHC[p]);
+  badgeEls[p].style.setProperty('--flashc',FLASHC[p]);
+  col.querySelectorAll('.pbtn').forEach(b=>{
+    if(b.classList.contains('plus')) plusBtns[p]=b; else minusBtns[p]=b;
+  });
+});
+
+// Odometer (4 Räder, Tausender..Einer)
+const odEl = document.getElementById('odometer');
+const wheels = [];
+ORDER.forEach(p=>{
+  const w = document.createElement('div');
+  w.className='wheel w'+p;
+  const strip = document.createElement('div'); strip.className='strip';
+  // Streifen: [9,0,1,2,3,4,5,6,7,8,9,0]  → Index d+1 zeigt Ziffer d
+  const seq=[9,0,1,2,3,4,5,6,7,8,9,0];
+  seq.forEach(n=>{ const s=document.createElement('span'); s.textContent=n; strip.appendChild(s); });
+  w.appendChild(strip);
+  odEl.appendChild(w);
+  wheels[p]={el:w, strip, idx:1}; // idx=1 → Ziffer 0
+});
+
+/* =========================================================================
+   2. Block-Objekte  (persistente Identität)
+   ========================================================================= */
+let _id=0;
+const allBlocks=new Set();   // alle lebenden Blöcke (für z-Index-Beruhigung)
+function makeBox(w,h,d,grid){
+  const box=document.createElement('div'); box.className='box';
+  const g = grid ? ' grid':'';
+  const gv = (Math.min(w,d))/10; // Gittermaß für Hunderter/Tausender
+  const mk=(cls,fw,fh,tf)=>{
+    const f=document.createElement('div'); f.className='face '+cls+g;
+    f.style.width=fw+'px'; f.style.height=fh+'px';
+    if(grid) f.style.setProperty('--g', (cls==='right'? d/10 : w/10)+'px');
+    f.style.transform='translate(-50%,-50%) '+tf;
+    return f;
+  };
+  box.appendChild(mk('top',   w, d, `rotateX(90deg) translateZ(${h/2}px)`));
+  box.appendChild(mk('front', w, h, `translateZ(${d/2}px)`));
+  box.appendChild(mk('right', d, h, `rotateY(90deg) translateZ(${w/2}px)`));
+  return box;
+}
+// Block-Konstruktoren — Maße in Welt-Einheiten (× U)
+function newBlock(type, colorPlace){
+  const el=document.createElement('div'); el.className='block p'+colorPlace;
+  let box;
+  if(type==='cube'){ el.classList.add('cube'); box=makeBox(U,U,U,false); }
+  else if(type==='plate'){ box=makeBox(10*U,1*U,10*U,true); }
+  else if(type==='tcube'){ box=makeBox(10*U,10*U,10*U,true); }
+  el.appendChild(box);
+  blocksEl.appendChild(el);
+  const b={id:++_id, type, colorPlace, el, box,
+          // aktuelle Pose (Bildschirm), für FLIP-freie Übergänge:
+          place:colorPlace, lx:0, ly:0, lz:0, dim:dimOf(type), born:false};
+  allBlocks.add(b);
+  return b;
+}
+function dimOf(type){
+  if(type==='cube') return {w:1,h:1,d:1};
+  if(type==='plate')return {w:10,h:1,d:10};
+  return {w:10,h:10,d:10};
+}
+function setColor(b, place){
+  if(b.colorPlace!==place){ b.colorPlace=place; b.el.className='block p'+place+(b.type==='cube'?' cube':''); }
+}
+function destroy(b){ if(b.el && b.el.parentNode) b.el.parentNode.removeChild(b.el); b.dead=true; allBlocks.delete(b); }
+
+/* =========================================================================
+   3. Modell  (Quelle der Wahrheit fürs Rendern)
+   einer:[cube...]  zehner:[rod...] rod=[cube×10]  hunderter:[plate...] tausender:[tcube...]
+   index 0 = unten (ältester), push = oben (neu).
+   ========================================================================= */
+const M = { 0:[], 1:[], 2:[], 3:[] };   // Hunderter/Tausender: Liste der plate/tcube; Zehner: Liste der Stäbe; Einer: Liste der Würfel
+let value = 0;
+let flying = [];           // transiente Blöcke mit expliziten Posen {b, place, lx,ly,lz}
+let busy = false;
+
+function countAt(p){
+  if(p===1) return M[1].length;          // Anzahl Stäbe
+  return M[p].length;
+}
+
+/* =========================================================================
+   4. Layout — berechnet Ziel-Pose jedes Blocks und wendet Transform an
+   ========================================================================= */
+let sceneRect=null;
+function refreshRects(){ sceneRect = blocksEl.getBoundingClientRect(); }
+
+// Lücken (Welt-Einheiten) — Blöcke werden in der Orientierung gestapelt,
+// in der sie zum nächsten Stellenwert gebündelt werden (keine Drehung nötig).
+const GAP_Z = 0.35;   // zwischen Zehner-Stäben (Zehner zählbar)
+const GAP_H = 0.6;    // zwischen Hunderter-Platten (Hunderter zählbar)
+const GAP_T = 1.6;    // zwischen Tausender-Würfeln (Tausender zählbar)
+
+// liefert lokale Pose (Welt-Einheiten, relativ zur Spalten-Basis) eines Blocks
+// Einer: waagerechte Reihe (→ bildet direkt den Stab)
+function poseEiner(i){ return {lx:(i-4.5), ly:-0.5, lz:0}; }
+// Zehner: Stäbe flach am Boden, in der Tiefe nebeneinander (→ bilden direkt die Platte)
+function poseRodCube(r,k){ return {lx:(k-4.5), ly:-0.5, lz:-r*(1+GAP_Z)}; }
+// Hunderter: Platten flach übereinander gestapelt (→ bilden direkt den Würfel)
+function posePlate(i){ return {lx:0, ly:-(i*(1+GAP_H)+0.5), lz:0}; }
+// Tausender: Würfel übereinander, mit Lücke zum Zählen
+function poseTcube(i){ return {lx:0, ly:-(i*(10+GAP_T)+5), lz:0}; }
+
+// sammelt alle Blöcke je Spalte mit ihren lokalen Posen
+function gatherColumn(p){
+  const arr=[];
+  if(p===0){ M[0].forEach((b,i)=>arr.push([b,poseEiner(i)])); }
+  else if(p===1){ M[1].forEach((rod,r)=>rod.forEach((b,k)=>arr.push([b,poseRodCube(r,k)]))); }
+  else if(p===2){ M[2].forEach((b,i)=>arr.push([b,posePlate(i)])); }
+  else if(p===3){ M[3].forEach((b,i)=>arr.push([b,poseTcube(i)])); }
+  // fliegende Blöcke dieser Spalte
+  flying.forEach(f=>{ if(f.place===p) arr.push([f.b,{lx:f.lx,ly:f.ly,lz:f.lz}]); });
+  return arr;
+}
+
+// berechnet Bildschirm-Ursprung + Skalierung je Spalte (auto-fit inkl. 3D-Überhang)
+function columnTransform(p, items){
+  const fr = frames[p].getBoundingClientRect();
+  const fw = fr.width, fh = fr.height;
+  const padX=10, padY=12;
+  // Inhalts-Bounding über alle Eckpunkte bei scale=1
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  if(items.length===0){ return {ox:fr.left-sceneRect.left+fw/2, oy:fr.top-sceneRect.top+fh-padY, s:0.6}; }
+  for(const [b,pose] of items){
+    const d=b.dim;
+    for(let sx=-1;sx<=1;sx+=2)for(let sy=-1;sy<=1;sy+=2)for(let sz=-1;sz<=1;sz+=2){
+      const cx=pose.lx+sx*d.w/2, cy=pose.ly+sy*d.h/2, cz=pose.lz+sz*d.d/2;
+      const q=proj(cx,cy,cz);
+      if(q.x<minX)minX=q.x; if(q.x>maxX)maxX=q.x;
+      if(q.y<minY)minY=q.y; if(q.y>maxY)maxY=q.y;
+    }
+  }
+  const cw=Math.max(1,maxX-minX), ch=Math.max(1,maxY-minY);
+  let s=Math.min((fw-padX*2)/cw,(fh-padY*2)/ch, MAXSCALE);
+  s=Math.max(0.08,s);
+  // horizontal zentrieren, unten ausrichten (mit Überhang-Polster oben & unten)
+  const ox = (fr.left-sceneRect.left) + fw/2 - s*(minX+maxX)/2;
+  const oy = (fr.top -sceneRect.top ) + fh - padY - s*maxY;
+  return {ox,oy,s};
+}
+
+const Z_BASE=1000, Z_TRANSIT=100000;
+// gibt true zurück, wenn der Block sich animiert bewegt (für z-Beruhigung)
+function applyPose(b, ox,oy,s, pose, instant){
+  const q=proj(pose.lx,pose.ly,pose.lz);
+  const x=ox+s*q.x, y=oy+s*q.y;
+  const depth = Math.round(DEPTH(pose.lx,pose.ly,pose.lz)*4);
+  const zRest = Z_BASE + depth;
+  b._zRest = zRest;
+  const moved = (b._x!=null) && (Math.abs(x-b._x)+Math.abs(y-b._y) > 1.5);
+  if(instant){
+    const t=b.el.style.transition; b.el.style.transition='none';
+    b.el.style.transform=`translate(${x}px,${y}px) scale(${s})`;
+    void b.el.offsetWidth; b.el.style.transition=t;
+    b.el.style.zIndex = zRest;
+  } else {
+    b.el.style.transform=`translate(${x}px,${y}px) scale(${s})`;
+    // bewegte Blöcke fliegen in einer hohen Transit-Ebene über ruhende
+    // Stapel (kein Durchstoßen); danach wieder auf die echte Tiefe setzen.
+    b.el.style.zIndex = moved ? (Z_TRANSIT + depth) : zRest;
+  }
+  b._x=x; b._y=y; b._s=s;
+  return moved && !instant;
+}
+
+function layout(instant){
+  if(!sceneRect) refreshRects();
+  let anyMoved=false;
+  for(let p=0;p<4;p++){
+    const items=gatherColumn(p);
+    const ct=columnTransform(p,items);
+    for(const [b,pose] of items){
+      // Newborn: erst unsichtbar an Zielpose setzen, dann einblenden
+      if(!b.born){
+        b.born=true;
+        b.el.style.opacity='0';
+        applyPose(b,ct.ox,ct.oy,ct.s,pose,true);
+        requestAnimationFrame(()=>{ b.el.style.opacity='1'; });
+      } else {
+        if(applyPose(b,ct.ox,ct.oy,ct.s,pose,instant)) anyMoved=true;
+      }
+    }
+  }
+  if(anyMoved) scheduleZSettle();
+}
+
+/* =========================================================================
+   5. Geschwindigkeit / Compounding
+   ========================================================================= */
+let lastAct=0;
+function dur(){
+  // schnelle Folgeaktionen → kürzere Dauer (snappy), aber nie ruckartig
+  const now=performance.now();
+  const gap=now-lastAct; lastAct=now;
+  if(reduced) return 0;
+  if(gap<160) return 0.22;
+  if(gap<340) return 0.34;
+  return 0.6;
+}
+function setDur(s){ document.documentElement.style.setProperty('--dur', s+'s'); }
+
+/* =========================================================================
+   6. Umbündeln — Carry / Borrow (das Herzstück)
+   ========================================================================= */
+
+function flashGain(p){
+  const f=frames[p]; f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');
+  const bd=badgeEls[p]; bd.classList.remove('show'); void bd.offsetWidth; bd.classList.add('show');
+}
+
+// erzeugt einen Stab (10 Würfel) als Array
+function spawnRodCubes(colorPlace){
+  const rod=[]; for(let k=0;k<10;k++) rod.push(newBlock('cube',colorPlace)); return rod;
+}
+
+let dCur=0.6;
+
+// Ausstehende visuelle Aufräumarbeiten (Übergaben). settle() schließt sie sofort ab.
+let cleanups=[];
+function later(fn,ms){
+  if(reduced){ fn(); return null; }
+  const tok={fn};
+  tok.id=setTimeout(()=>{ cleanups=cleanups.filter(c=>c!==tok); fn(); }, ms);
+  cleanups.push(tok); return tok;
+}
+function settle(){
+  // Verkettete Übergaben (gestaffelte Kaskade) komplett abarbeiten → Modell == value
+  let guard=0;
+  while(cleanups.length && guard++<60){
+    const cs=cleanups; cleanups=[];
+    cs.forEach(c=>{ clearTimeout(c.id); try{ c.fn(); }catch(e){} });
+  }
+}
+
+// nach einer Bewegung jeden Block wieder auf seine echte Tiefen-z-Ebene setzen
+let zTok=null;
+function applyRestingZ(){
+  zTok=null;
+  allBlocks.forEach(b=>{ if(b.el && b._zRest!=null) b.el.style.zIndex=b._zRest; });
+}
+function scheduleZSettle(){
+  if(reduced){ applyRestingZ(); return; }
+  if(zTok){ clearTimeout(zTok.id); cleanups=cleanups.filter(c=>c!==zTok); }
+  zTok=later(applyRestingZ, dCur*1000+90);
+}
+
+// setzt einen frischen Block sofort an eine Quell-Pose (für „Aufspalten")
+function emanate(b, src){
+  b.born=true;
+  if(!src || src.x==null){ b._x=0;b._y=0;b._s=1; return; }
+  b._x=src.x; b._y=src.y; b._s=src.s;
+  const t=b.el.style.transition; b.el.style.transition='none';
+  b.el.style.opacity='1';
+  b.el.style.transform=`translate(${src.x}px,${src.y}px) scale(${src.s})`;
+  void b.el.offsetWidth; b.el.style.transition=t;
+}
+
+// ---- HINZUFÜGEN an Platz p (ein Block) ----
+function pushUnit(p){
+  if(p===0) M[0].push(newBlock('cube',0));
+  else if(p===1) M[1].push(spawnRodCubes(1));
+  else if(p===2) M[2].push(newBlock('plate',2));
+  else M[3].push(newBlock('tcube',3));
+}
+function addAtPlace(p){
+  pushUnit(p);
+  layout(false);
+  cascadeUp(p);          // Übertrag nach oben — GESTAFFELT (eine Stufe nach der anderen)
+}
+
+// Gestaffelte Kaskade: jede Stufe schließt ihre Übergabe ab, bevor die nächste
+// sie aufgreift. Sonst greift z. B. Hunderter→Tausender die noch entstehende
+// Hunderter-Platte mitten in deren Übergabe ab (die „klebt" dann fest).
+// settle() arbeitet die Kette bei Unterbrechung sofort komplett ab.
+function staggerFor(p){
+  // p=0: Stab bildet sich sofort → kurzer Versatz; p=1: Übergabe an Platte erst
+  // vollständig abwarten, dann den Würfel formen.
+  return p===0 ? Math.max(120, dCur*1000*0.42) : dCur*1000 + 70;
+}
+function cascadeUp(p){
+  if(p>2 || countAt(p)<10) return;
+  bundleUp(p);
+  layout(false);
+  if(p<2) later(()=>cascadeUp(p+1), staggerFor(p));
+}
+
+// 10 Blöcke von Platz p bündeln zu 1 Block auf Platz p+1 (Modell synchron)
+function bundleUp(p){
+  flashGain(p+1);
+  if(p===0){
+    // 10 Einer-Würfel → genau diese Würfel werden zum Stab (Identität bleibt, Umfärben)
+    const cubes=M[0].splice(0,10);
+    cubes.forEach(c=>setColor(c,1));
+    M[1].push(cubes);
+  } else if(p===1){
+    // 10 Stäbe (100 Würfel) fließen in die Plattenform → Übergabe an die Platte
+    const rods=M[1].splice(0,10);
+    const cubes=[].concat(...rods);
+    const plate=newBlock('plate',2); plate.born=true; plate.el.style.opacity='0';
+    M[2].push(plate); const slot=M[2].length-1;
+    const ply=posePlate(slot).ly;   // Würfel füllen exakt die Ruheform der Platte
+    // Tiefen-Reihenfolge erhalten: vorderster Stab (r=0) → vorderste Plattenreihe.
+    // Sonst kreuzen sich die Stäbe (sieht aus wie Drehen).
+    cubes.forEach((c,n)=>{ setColor(c,2); const r=Math.floor(n/10);
+      flying.push({b:c, place:2, lx:(n%10)-4.5, ly:ply, lz:4.5-r}); });
+    const t=dCur*1000;
+    later(()=>{ plate.el.style.opacity='1'; }, t*0.72);
+    later(()=>{                       // Übergabe abschließen
+      flying=flying.filter(f=>!cubes.includes(f.b));
+      cubes.forEach(c=>{ c.el.style.opacity='0'; later(()=>destroy(c),180); });
+      plate.el.style.opacity='1';
+      layout(true);
+    }, t+30);
+  } else if(p===2){
+    // 10 Platten stapeln zur Würfelform → Übergabe an den Tausender-Würfel
+    const plates=M[2].splice(0,10);
+    const tc=newBlock('tcube',3); tc.born=true; tc.el.style.opacity='0';
+    M[3].push(tc); const slot=M[3].length-1;
+    const base=slot*(10+GAP_T);     // Platten stapeln sich zur Würfelform
+    plates.forEach((pl,n)=>{ setColor(pl,3); pl.el.style.opacity='1';
+      flying.push({b:pl, place:3, lx:0, ly:-(base+n+0.5), lz:0}); });
+    const t=dCur*1000;
+    later(()=>{ tc.el.style.opacity='1'; }, t*0.72);
+    later(()=>{
+      flying=flying.filter(f=>!plates.includes(f.b));
+      plates.forEach(pl=>{ pl.el.style.opacity='0'; later(()=>destroy(pl),180); });
+      tc.el.style.opacity='1';
+      layout(true);
+    }, t+30);
+  }
+}
+
+// ---- ENTFERNEN an Platz p (ein Block) ----
+function popUnit(p){
+  if(p===0){ const c=M[0].pop(); if(c){ c.el.style.opacity='0'; later(()=>destroy(c),200);} }
+  else if(p===1){ const rod=M[1].pop(); if(rod){ rod.forEach(c=>c.el.style.opacity='0'); later(()=>rod.forEach(destroy),200);} }
+  else if(p===2){ const pl=M[2].pop(); if(pl){ pl.el.style.opacity='0'; later(()=>destroy(pl),200);} }
+  else { const tc=M[3].pop(); if(tc){ tc.el.style.opacity='0'; later(()=>destroy(tc),200);} }
+}
+function removeAtPlace(p){
+  if(countAt(p)===0) borrowDown(p+1);   // Modell synchron auffüllen (kaskadiert)
+  popUnit(p);
+  layout(false);
+}
+
+// 1 Block von Platz p in 10 Blöcke auf Platz p-1 aufspalten (Modell synchron)
+function borrowDown(p){
+  if(countAt(p)===0) borrowDown(p+1);
+  flashGain(p-1);
+  if(p===1){
+    // ein Stab → 10 Einer (dieselben Würfel, umfärben grün)
+    const rod=M[1].pop();
+    rod.forEach(c=>{ setColor(c,0); M[0].push(c); });
+  } else if(p===2){
+    // eine Platte → 10 Stäbe (100 Würfel quellen aus der Platte)
+    const plate=M[2].pop();
+    const src={x:plate._x,y:plate._y,s:plate._s};
+    const cubes=[]; for(let i=0;i<100;i++){ const c=newBlock('cube',1); emanate(c,src); cubes.push(c); }
+    for(let r=0;r<10;r++) M[1].push(cubes.slice(r*10,r*10+10));
+    plate.el.style.opacity='0'; later(()=>destroy(plate),180);
+  } else if(p===3){
+    // ein Tausender-Würfel → 10 Platten
+    const tc=M[3].pop();
+    const src={x:tc._x,y:tc._y,s:tc._s};
+    for(let i=0;i<10;i++){ const pl=newBlock('plate',2); emanate(pl,src); M[2].push(pl); }
+    tc.el.style.opacity='0'; later(()=>destroy(tc),180);
+  }
+}
+
+/* =========================================================================
+   7. Reduced-Motion / Settle: Modell hart aus value aufbauen
+   ========================================================================= */
+function clearAll(){
+  cleanups.forEach(c=>{ if(c&&c.id) clearTimeout(c.id); }); cleanups=[];
+  flying=[];
+  blocksEl.innerHTML=''; M[0]=[];M[1]=[];M[2]=[];M[3]=[];
+}
+function rebuildFromValue(v, instant){
+  clearAll();
+  const dig=[v%10, Math.floor(v/10)%10, Math.floor(v/100)%10, Math.floor(v/1000)%10];
+  for(let i=0;i<dig[0];i++) M[0].push(newBlock('cube',0));
+  for(let r=0;r<dig[1];r++) M[1].push(spawnRodCubes(1));
+  for(let i=0;i<dig[2];i++) M[2].push(newBlock('plate',2));
+  for(let i=0;i<dig[3];i++) M[3].push(newBlock('tcube',3));
+  // alle als geboren markieren (kein Einblenden bei Hartaufbau)
+  [].concat(M[0],[].concat(...M[1]),M[2],M[3]).forEach(b=>b.born=true);
+  refreshRects(); layout(true);
+}
+
+/* =========================================================================
+   8. Öffentliche Aktionen + Guardrails
+   ========================================================================= */
+function setDigits(){
+  for(let p=0;p<4;p++){ digitEls[p].textContent = Math.floor(value/PLACES[p].mag)%10; }
+}
+function rollOdometer(oldV,newV){
+  const dir = newV>=oldV ? 1 : -1;
+  for(let p=0;p<4;p++){
+    const oldD=Math.floor(oldV/PLACES[p].mag)%10;
+    const newD=Math.floor(newV/PLACES[p].mag)%10;
+    if(oldD===newD) continue;
+    const w=wheels[p];
+    let steps = dir>0 ? ((newD-oldD+10)%10) : -(((oldD-newD)+10)%10);
+    w.idx += steps;
+    w.strip.style.transition = reduced?'none':'transform .5s var(--ease)';
+    const cellH = w.el.clientHeight;
+    w.strip.style.transform=`translateY(${-w.idx*cellH}px)`;
+    // nach dem Rollen in den Basisbereich (1..10) zurücksetzen
+    const norm=()=>{
+      let ni=w.idx; while(ni>10) ni-=10; while(ni<1) ni+=10;
+      if(ni!==w.idx){ w.idx=ni; w.strip.style.transition='none';
+        w.strip.style.transform=`translateY(${-w.idx*cellH}px)`; void w.strip.offsetWidth; }
+    };
+    if(reduced) norm(); else setTimeout(norm,520);
+  }
+}
+function updateGuards(){
+  // Klicker
+  document.getElementById('btnPlus').disabled  = value>=9999;
+  document.getElementById('btnMinus').disabled = value<=0;
+  document.getElementById('btnReset').disabled = value===0;
+  for(let p=0;p<4;p++){
+    const mag=PLACES[p].mag;
+    const dgt=Math.floor(value/mag)%10;
+    // "+": deaktivieren, wenn das Erhöhen 9999 überschreiten würde …
+    let plusDis = (value+mag>9999);
+    // … außer Einer darf bei 9 bündeln (bleibt aktiv, solange value<9999)
+    if(p===0) plusDis = (value>=9999);
+    plusBtns[p].disabled = plusDis;
+    // "−": deaktivieren, wenn dieser Platz nichts beiträgt bzw. value zu klein
+    minusBtns[p].disabled = (value < mag);
+  }
+}
+
+function act(delta){
+  const oldV=value;
+  let newV=value+delta;
+  if(newV<0||newV>9999) return;
+  settle();                       // laufende Übergaben abschließen → Modell == value
+  value=newV;
+  dCur=dur(); setDur(dCur);
+  rollOdometer(oldV,newV);
+  setDigits(); updateGuards();
+  if(reduced){ rebuildFromValue(value,true); return; }
+  // gleiche Würfel-Choreografie wie Platz-Buttons:
+  if(delta>0) addAtPlace(magToPlace(delta));
+  else        removeAtPlace(magToPlace(-delta));
+}
+function magToPlace(m){ return m===1?0:m===10?1:m===100?2:3; }
+
+function placeAction(p, d){
+  const mag=PLACES[p].mag;
+  const oldV=value; let newV=value+d*mag;
+  if(newV<0||newV>9999) return;
+  settle();
+  value=newV;
+  dCur=dur(); setDur(dCur);
+  rollOdometer(oldV,newV); setDigits(); updateGuards();
+  if(reduced){ rebuildFromValue(value,true); return; }
+  if(d>0) addAtPlace(p); else removeAtPlace(p);
+}
+
+/* =========================================================================
+   9. Verdrahtung
+   ========================================================================= */
+const big=document.getElementById('btnPlus');
+big.addEventListener('click',()=>{ if(value<9999){ big.classList.add('press'); setTimeout(()=>big.classList.remove('press'),110); act(1);} });
+document.getElementById('btnMinus').addEventListener('click',()=>act(-1));
+document.getElementById('btnReset').addEventListener('click',()=>{
+  if(value===0) return;
+  const oldV=value; value=0; dCur=dur(); setDur(dCur);
+  rollOdometer(oldV,0); setDigits(); updateGuards();
+  rebuildFromValue(0,true);
+});
+for(let p=0;p<4;p++){
+  plusBtns[p].addEventListener('click',()=>placeAction(p,1));
+  minusBtns[p].addEventListener('click',()=>placeAction(p,-1));
+}
+
+// Tastenkürzel: ↑ +1 · ↓ −1 · 1/2/3/4 → Tausender/Hunderter/Zehner/Einer +1
+function tapBtn(btn){ if(!btn||btn.disabled) return; btn.classList.add('kp'); setTimeout(()=>btn.classList.remove('kp'),120); }
+function pressBig(){ if(value>=9999) return; big.classList.add('press'); setTimeout(()=>big.classList.remove('press'),110); }
+const KEYPLACE={ '1':3, '2':2, '3':1, '4':0 };   // Ziffertaste → +Stellenwert
+const KEYMINUS={ 'q':3, 'w':2, 'e':1, 'r':0 };   // q·w·e·r → −Stellenwert (über 1·2·3·4)
+window.addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey||e.repeat) return;
+  const tag=(e.target&&e.target.tagName)||''; if(tag==='INPUT'||tag==='TEXTAREA') return;
+  const k=e.key.length===1 ? e.key.toLowerCase() : e.key;
+  let handled=true;
+  if(e.key==='ArrowUp'){ pressBig(); act(1); }
+  else if(e.key==='ArrowDown'){ tapBtn(document.getElementById('btnMinus')); act(-1); }
+  else if(k in KEYPLACE){ const p=KEYPLACE[k]; tapBtn(plusBtns[p]); placeAction(p,1); }
+  else if(k in KEYMINUS){ const p=KEYMINUS[k]; tapBtn(minusBtns[p]); placeAction(p,-1); }
+  else handled=false;
+  if(handled) e.preventDefault();
+});
+
+let rT;
+window.addEventListener('resize',()=>{ clearTimeout(rT); rT=setTimeout(()=>{ refreshRects(); layout(true); },120); });
+window.addEventListener('orientationchange',()=>setTimeout(()=>{refreshRects();layout(true);},300));
+
+/* =========================================================================
+   10. Start
+   ========================================================================= */
+function start(){
+  refreshRects();
+  rebuildFromValue(0,true);
+  setDigits(); updateGuards();
+  // Räder initialisieren
+  wheels.forEach(w=>{ const h=w.el.clientHeight; w.strip.style.transition='none'; w.strip.style.transform=`translateY(${-w.idx*h}px)`; });
+}
+if(document.readyState==='complete'||document.readyState==='interactive') setTimeout(start,30);
+else window.addEventListener('DOMContentLoaded',start);
+})();
+</script>
+</body>
+</html>
