@@ -557,7 +557,7 @@ function applyPose(b, ox,oy,s, pose, instant){
 
 function layout(instant){
   if(!sceneRect) refreshRects();
-  let anyMoved=false;
+  let anyMoved=false, anyBorn=false;
   for(let p=0;p<4;p++){
     const items=gatherColumn(p);
     const ct=columnTransform(p,items);
@@ -567,13 +567,19 @@ function layout(instant){
         b.born=true;
         b.el.style.opacity='0';
         applyPose(b,ct.ox,ct.oy,ct.s,pose,true);
+        if(!instant){
+          // Während des Einblendens in dieselbe Transit-Ebene wie bewegte
+          // Nachbarn, sonst rendert der neue Block hinter ihnen (Clipping).
+          b.el.style.zIndex = Z_TRANSIT + (b._zRest - Z_BASE);
+          anyBorn=true;
+        }
         requestAnimationFrame(()=>{ b.el.style.opacity='1'; });
       } else {
         if(applyPose(b,ct.ox,ct.oy,ct.s,pose,instant)) anyMoved=true;
       }
     }
   }
-  if(anyMoved) scheduleZSettle();
+  if(anyMoved||anyBorn) scheduleZSettle();
 }
 
 /* =========================================================================
