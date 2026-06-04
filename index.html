@@ -122,18 +122,18 @@ h1,h2,p{margin:0;}
   100%{box-shadow:inset 0 0 0 2px #fff0, inset 0 2px 10px #000a;}
 }
 .badge{
-  position:absolute; top:7px; left:50%; transform:translate(-50%,-6px);
+  position:absolute; top:14px; left:50%; transform:translate(-50%,0);
   background:var(--flashc,#fff); color:#08101e;
   font-weight:900; font-size:12px; padding:3px 9px; border-radius:999px;
   box-shadow:0 6px 16px -4px #000a, inset 0 1px 0 #ffffff80;
   opacity:0; pointer-events:none; white-space:nowrap; z-index:9999;
 }
 .badge.show{ animation:badgePop .9s var(--ease); }
-@keyframes badgePop{
-  0%{opacity:0; transform:translate(-50%,4px) scale(.6);}
-  18%{opacity:1; transform:translate(-50%,-6px) scale(1.06);}
-  70%{opacity:1; transform:translate(-50%,-9px) scale(1);}
-  100%{opacity:0; transform:translate(-50%,-22px) scale(.95);}
+@keyframes badgePop{   /* bleibt vollständig im Rahmen (kein Abschneiden oben) */
+  0%{opacity:0; transform:translate(-50%,8px) scale(.6);}
+  20%{opacity:1; transform:translate(-50%,0) scale(1.06);}
+  72%{opacity:1; transform:translate(-50%,-2px) scale(1);}
+  100%{opacity:0; transform:translate(-50%,-8px) scale(.94);}
 }
 
 .col-foot{
@@ -331,7 +331,7 @@ h1,h2,p{margin:0;}
       </div>
       <button class="bigbtn" id="btnPlus" aria-label="plus eins">+1<span class="lbl">drücken</span></button>
     </section>
-    <p class="hint">Klicker drücken oder unter einer Spalte +/− tippen — beide Ansichten zeigen dieselbe Zahl.<br>Tastatur: ↑ +1 · ↓ −1 · 1·2·3·4 erhöhen, q·w·e·r verringern (Tausender·Hunderter·Zehner·Einer).</p>
+    <p class="hint">Klicker drücken oder unter einer Spalte +/− tippen — beide Ansichten zeigen dieselbe Zahl.<br>Tastatur: ↑ +1 · ↓ −1 · 1·2·3·4 erhöhen, q·w·e·r verringern (Tausender·Hunderter·Zehner·Einer) — Taste halten zum Zählen.</p>
   </main>
 
 <script>
@@ -556,7 +556,7 @@ function applyPose(b, ox,oy,s, pose, instant){
 }
 
 function layout(instant){
-  if(!sceneRect) refreshRects();
+  refreshRects();            // immer aktuelle Maße (robust gegen Zoom/Reflow)
   let anyMoved=false, anyBorn=false;
   for(let p=0;p<4;p++){
     const items=gatherColumn(p);
@@ -601,9 +601,10 @@ function setDur(s){ document.documentElement.style.setProperty('--dur', s+'s'); 
    6. Umbündeln — Carry / Borrow (das Herzstück)
    ========================================================================= */
 
-function flashGain(p){
+function flashGain(p, label){
   const f=frames[p]; f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');
-  const bd=badgeEls[p]; bd.classList.remove('show'); void bd.offsetWidth; bd.classList.add('show');
+  const bd=badgeEls[p]; bd.textContent='🔁 '+label;
+  bd.classList.remove('show'); void bd.offsetWidth; bd.classList.add('show');
 }
 
 // erzeugt einen Stab (10 Würfel) als Array
@@ -684,7 +685,7 @@ function cascadeUp(p){
 
 // 10 Blöcke von Platz p bündeln zu 1 Block auf Platz p+1 (Modell synchron)
 function bundleUp(p){
-  flashGain(p+1);
+  flashGain(p+1, '+1');     // höherer Platz bekommt 1 (bündeln)
   if(p===0){
     // 10 Einer-Würfel → genau diese Würfel werden zum Stab (Identität bleibt, Umfärben)
     const cubes=M[0].splice(0,10);
@@ -744,7 +745,7 @@ function removeAtPlace(p){
 // 1 Block von Platz p in 10 Blöcke auf Platz p-1 aufspalten (Modell synchron)
 function borrowDown(p){
   if(countAt(p)===0) borrowDown(p+1);
-  flashGain(p-1);
+  flashGain(p-1, '+10');    // niedrigerer Platz bekommt 10 (entbündeln)
   if(p===1){
     // ein Stab → 10 Einer (dieselben Würfel, umfärben grün)
     const rod=M[1].pop();
@@ -875,27 +876,63 @@ for(let p=0;p<4;p++){
   minusBtns[p].addEventListener('click',()=>placeAction(p,-1));
 }
 
-// Tastenkürzel: ↑ +1 · ↓ −1 · 1/2/3/4 → Tausender/Hunderter/Zehner/Einer +1
+// Tastenkürzel: ↑ +1 · ↓ −1 · 1/2/3/4 erhöhen · q/w/e/r verringern
+// Gedrückthalten → fortlaufendes Zählen (eigene Wiederholung, nicht OS-Repeat).
+const minusBig=document.getElementById('btnMinus');
 function tapBtn(btn){ if(!btn||btn.disabled) return; btn.classList.add('kp'); setTimeout(()=>btn.classList.remove('kp'),120); }
 function pressBig(){ if(value>=9999) return; big.classList.add('press'); setTimeout(()=>big.classList.remove('press'),110); }
 const KEYPLACE={ '1':3, '2':2, '3':1, '4':0 };   // Ziffertaste → +Stellenwert
 const KEYMINUS={ 'q':3, 'w':2, 'e':1, 'r':0 };   // q·w·e·r → −Stellenwert (über 1·2·3·4)
-window.addEventListener('keydown',e=>{
-  if(e.metaKey||e.ctrlKey||e.altKey||e.repeat) return;
-  const tag=(e.target&&e.target.tagName)||''; if(tag==='INPUT'||tag==='TEXTAREA') return;
-  const k=e.key.length===1 ? e.key.toLowerCase() : e.key;
-  let handled=true;
-  if(e.key==='ArrowUp'){ pressBig(); act(1); }
-  else if(e.key==='ArrowDown'){ tapBtn(document.getElementById('btnMinus')); act(-1); }
+const REPEAT_DELAY=300, REPEAT_EVERY=85;
+
+function runKey(k){
+  // führt die Aktion aus; gibt true zurück, wenn sich der Wert geändert hat
+  const before=value;
+  if(k==='ArrowUp'){ pressBig(); act(1); }
+  else if(k==='ArrowDown'){ tapBtn(minusBig); act(-1); }
   else if(k in KEYPLACE){ const p=KEYPLACE[k]; tapBtn(plusBtns[p]); placeAction(p,1); }
   else if(k in KEYMINUS){ const p=KEYMINUS[k]; tapBtn(minusBtns[p]); placeAction(p,-1); }
-  else handled=false;
-  if(handled) e.preventDefault();
-});
+  else return null;        // keine zuständige Taste
+  return value!==before;
+}
+let repeatKey=null, repDelay=null, repTimer=null;
+function stopRepeat(){ clearTimeout(repDelay); clearInterval(repTimer); repeatKey=null; repDelay=null; repTimer=null; }
+function normKey(e){ return e.key.length===1 ? e.key.toLowerCase() : e.key; }
 
+window.addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  const tag=(e.target&&e.target.tagName)||''; if(tag==='INPUT'||tag==='TEXTAREA') return;
+  const k=normKey(e);
+  const isOurs = k==='ArrowUp'||k==='ArrowDown'||k in KEYPLACE||k in KEYMINUS;
+  if(!isOurs) return;
+  e.preventDefault();
+  if(e.repeat) return;            // OS-Repeat ignorieren, wir wiederholen selbst
+  if(repeatKey===k) return;
+  stopRepeat();
+  if(runKey(k)===null) return;
+  repeatKey=k;
+  repDelay=setTimeout(()=>{
+    repTimer=setInterval(()=>{
+      if(repeatKey!==k){ stopRepeat(); return; }
+      if(runKey(k)===false) stopRepeat();   // an der Grenze (0 / 9999) anhalten
+    }, REPEAT_EVERY);
+  }, REPEAT_DELAY);
+});
+window.addEventListener('keyup',e=>{ if(normKey(e)===repeatKey) stopRepeat(); });
+window.addEventListener('blur', stopRepeat);
+
+// Neu-Layout bei Größen-/Zoom-Änderungen (Fenster, Pinch-Zoom, Reflow)
 let rT;
-window.addEventListener('resize',()=>{ clearTimeout(rT); rT=setTimeout(()=>{ refreshRects(); layout(true); },120); });
+function relayout(){ clearTimeout(rT); rT=setTimeout(()=>{ refreshRects(); layout(true); },80); }
+window.addEventListener('resize', relayout);
 window.addEventListener('orientationchange',()=>setTimeout(()=>{refreshRects();layout(true);},300));
+if(window.visualViewport){
+  visualViewport.addEventListener('resize', relayout);
+  visualViewport.addEventListener('scroll', relayout);
+}
+if(window.ResizeObserver){
+  new ResizeObserver(relayout).observe(blocksEl);
+}
 
 /* =========================================================================
    10. Start
