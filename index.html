@@ -7,21 +7,18 @@
 <title>Stellenwerte · Mehrsystemblöcke</title>
 <style>
 /* ============================================================
-   STELLENWERTSYSTEM — Tally-Counter + Dienes-Blöcke (0–9999)
+   STELLENWERTSYSTEM — Tally-Counter + Dienes-Blöcke
    Eine Quelle der Wahrheit: die Zahl. Zwei Ansichten, bidirektional.
+   3, 4 oder 5 Stellen.  Echte, verschmolzene Mehrsystemblöcke:
+   Einer = Würfel · Zehner = Stange · Hunderter = Platte ·
+   Tausender = Würfel · Zehntausender = Turm aus 10 Tausendern.
    ============================================================ */
 :root{
   --bg0:#10151f; --bg1:#1b2433; --bg2:#222d40;
   --ink:#eef3fb; --ink-dim:#9fb0c8; --line:#33415c;
   --frame:#161d29; --frame-edge:#2c3850;
-
-  /* Platzfarben */
-  --E:#34c759; --E2:#23913f; --E3:#1c733300;
-  --Z:#0a84ff; --H:#ff9f0a; --T:#ff3b30;
-
   --dur:.6s;
   --ease:cubic-bezier(.34,1.2,.4,1);
-
   --safe-t:env(safe-area-inset-top,0px);
   --safe-b:env(safe-area-inset-bottom,0px);
   --safe-l:env(safe-area-inset-left,0px);
@@ -32,89 +29,68 @@ html,body{margin:0; height:100%;}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
   color:var(--ink);
-  background:
-    radial-gradient(120% 80% at 50% -10%, #243049 0%, var(--bg0) 60%) fixed;
-  display:flex; flex-direction:column;
-  min-height:100%;
+  background:radial-gradient(120% 80% at 50% -10%, #243049 0%, var(--bg0) 60%) fixed;
+  display:flex; flex-direction:column; min-height:100%;
   padding:calc(var(--safe-t)) var(--safe-r) var(--safe-b) var(--safe-l);
-  overflow-x:hidden;
-  -webkit-user-select:none; user-select:none;
-  touch-action:manipulation;
+  overflow-x:hidden; -webkit-user-select:none; user-select:none; touch-action:manipulation;
 }
 h1,h2,p{margin:0;}
 
 /* ---------- Kopf ---------- */
-.app-head{
-  text-align:center; padding:10px 14px 4px;
-}
+.app-head{ text-align:center; padding:9px 14px 3px; }
 .app-head h1{
   font-size:clamp(17px,4.6vw,24px); font-weight:800; letter-spacing:.3px;
   display:flex; align-items:center; justify-content:center; gap:.45em;
 }
 .app-head .sub{font-size:12px; color:var(--ink-dim); margin-top:2px; font-weight:600;}
+.places{ display:flex; align-items:center; justify-content:center; gap:6px; margin-top:6px; }
+.places .plabel{ font-size:11px; color:var(--ink-dim); font-weight:700; letter-spacing:.2px; }
+.places button{
+  width:30px; height:26px; border-radius:8px; border:1px solid var(--frame-edge);
+  background:#1b2435; color:var(--ink-dim); font-weight:800; font-size:13px; cursor:pointer;
+  transition:transform .06s, background .15s, color .15s, border-color .15s;
+}
+.places button:active{ transform:translateY(1px); }
+.places button.active{ background:linear-gradient(180deg,#4a6cff,#2b4fd6); color:#fff; border-color:#7a93ff; box-shadow:0 2px 8px -2px #2b4fd6aa; }
 
 /* ---------- Layout ---------- */
 .stage{
-  flex:1 1 auto;
-  display:flex; flex-direction:column;
-  gap:8px;
-  padding:6px 8px 10px;
-  max-width:760px; width:100%; margin:0 auto;
+  flex:1 1 auto; display:flex; flex-direction:column; gap:8px;
+  padding:6px 8px 10px; max-width:820px; width:100%; margin:0 auto;
 }
 
 /* ===========================================================
-   STELLENWERT-TABELLE (Dienes-Blöcke)
+   STELLENWERT-TABELLE
    =========================================================== */
 .table-wrap{
   position:relative;
   background:linear-gradient(180deg,#1b2435,#141b27);
-  border:1px solid var(--frame-edge);
-  border-radius:18px;
-  padding:8px 8px 6px;
+  border:1px solid var(--frame-edge); border-radius:18px; padding:8px 8px 6px;
   box-shadow:0 10px 30px -12px #000a, inset 0 1px 0 #ffffff10;
 }
-.cols{
-  display:grid; grid-template-columns:repeat(4,1fr);
-  gap:6px;
-}
-.col{
-  display:flex; flex-direction:column;
-  min-width:0;
-}
-.col-head{
-  text-align:center; padding:2px 0 5px;
-}
+.cols{ display:grid; gap:6px; }
+.col{ display:flex; flex-direction:column; min-width:0; }
+.col-head{ text-align:center; padding:2px 0 5px; }
 .col-head .name{
-  font-size:clamp(9px,2.3vw,12px); font-weight:800; letter-spacing:.2px;
-  text-transform:uppercase;
+  font-size:clamp(8px,2.1vw,12px); font-weight:800; letter-spacing:.2px;
+  text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .col-head .digit{
   font-variant-numeric:tabular-nums;
-  font-size:clamp(20px,6.5vw,30px); font-weight:900; line-height:1;
-  margin-top:1px;
+  font-size:clamp(18px,6vw,30px); font-weight:900; line-height:1; margin-top:1px;
 }
-.col[data-p="0"] .name,.col[data-p="0"] .digit{color:var(--E);}
-.col[data-p="1"] .name,.col[data-p="1"] .digit{color:var(--Z);}
-.col[data-p="2"] .name,.col[data-p="2"] .digit{color:var(--H);}
-.col[data-p="3"] .name,.col[data-p="3"] .digit{color:var(--T);}
-
 .frame{
-  position:relative;
-  flex:1 1 auto;
-  height:clamp(180px,40vh,300px);
+  position:relative; flex:1 1 auto; height:clamp(176px,40vh,300px);
   border-radius:12px;
-  background:
-    linear-gradient(180deg,#0d121c,#101622 60%, #0c1019);
+  background:linear-gradient(180deg,#0d121c,#101622 60%, #0c1019);
   border:1px solid var(--frame-edge);
   box-shadow:inset 0 2px 10px #000a, inset 0 -10px 18px -10px #000c;
   overflow:hidden;
 }
-.frame::after{ /* Bodenlinie */
-  content:""; position:absolute; left:8%; right:8%; bottom:9px; height:2px;
-  border-radius:2px;
+.frame::after{
+  content:""; position:absolute; left:8%; right:8%; bottom:9px; height:2px; border-radius:2px;
   background:linear-gradient(90deg,#fff0,#ffffff22,#fff0);
 }
-/* lokales Umbündel-Feedback */
 .frame.flash{ animation:frameFlash .6s ease; }
 @keyframes frameFlash{
   0%{box-shadow:inset 0 0 0 2px #fff0, inset 0 2px 10px #000a;}
@@ -129,71 +105,48 @@ h1,h2,p{margin:0;}
   opacity:0; pointer-events:none; white-space:nowrap; z-index:9999;
 }
 .badge.show{ animation:badgePop .9s var(--ease); }
-@keyframes badgePop{   /* bleibt vollständig im Rahmen (kein Abschneiden oben) */
+@keyframes badgePop{
   0%{opacity:0; transform:translate(-50%,8px) scale(.6);}
   20%{opacity:1; transform:translate(-50%,0) scale(1.06);}
   72%{opacity:1; transform:translate(-50%,-2px) scale(1);}
   100%{opacity:0; transform:translate(-50%,-8px) scale(.94);}
 }
-
-.col-foot{
-  display:flex; gap:5px; padding:6px 0 1px; justify-content:center;
-}
+.col-foot{ display:flex; gap:5px; padding:6px 0 1px; justify-content:center; }
 .pbtn{
-  flex:1 1 0; min-width:0;
-  height:38px; border-radius:10px; border:1px solid #ffffff18;
-  font-size:19px; font-weight:900; color:#fff;
+  flex:1 1 0; min-width:0; height:38px; border-radius:10px; border:1px solid #ffffff18;
+  font-size:18px; font-weight:900; color:#fff;
   background:linear-gradient(180deg,#2c3850,#1c2536);
-  display:flex; align-items:center; justify-content:center;
-  cursor:pointer; user-select:none;
+  display:flex; align-items:center; justify-content:center; cursor:pointer; user-select:none;
   box-shadow:0 3px 0 #0006, inset 0 1px 0 #ffffff30;
-  transition:transform .06s, box-shadow .06s, opacity .15s, filter .15s;
+  transition:transform .06s, box-shadow .06s, opacity .15s, filter .15s; touch-action:none;
 }
 .pbtn:active,.pbtn.kp{ transform:translateY(2px); box-shadow:0 1px 0 #0006, inset 0 1px 0 #ffffff30; }
-.minibtn.kp{ transform:translateY(2px); box-shadow:0 1px 0 #8794a8, inset 0 1px 0 #fff; }
-.pbtn.plus[data-p="0"]{background:linear-gradient(180deg,#3ad668,#1f9b41);}
-.pbtn.plus[data-p="1"]{background:linear-gradient(180deg,#3aa0ff,#0667d6);}
-.pbtn.plus[data-p="2"]{background:linear-gradient(180deg,#ffb53d,#e07d00);}
-.pbtn.plus[data-p="3"]{background:linear-gradient(180deg,#ff6258,#d81e15);}
 .pbtn.minus{ background:linear-gradient(180deg,#46556f,#2a3447); }
 .pbtn[disabled]{ opacity:.32; filter:grayscale(.6); pointer-events:none; box-shadow:0 1px 0 #0004 inset; }
+.minibtn.kp{ transform:translateY(2px); box-shadow:0 1px 0 #8794a8, inset 0 1px 0 #fff; }
 
 /* ===========================================================
    3D-BLÖCKE — isometrisch, orthographisch (kein perspective)
    =========================================================== */
-#blocks{
-  position:absolute; inset:0; pointer-events:none; z-index:5;
-}
+#blocks{ position:absolute; inset:0; pointer-events:none; z-index:5; }
 .block{
-  position:absolute; left:0; top:0; width:0; height:0;
-  transform-origin:0 0;
+  position:absolute; left:0; top:0; width:0; height:0; transform-origin:0 0;
   will-change:transform;
   transition:transform var(--dur) var(--ease), opacity .25s ease;
 }
 .block .box{
-  position:absolute; left:0; top:0;
-  transform-style:preserve-3d;
-  /* feste isometrische, orthographische Ausrichtung */
+  position:absolute; left:0; top:0; transform-style:preserve-3d;
   transform:translate(-50%,-50%) rotateX(-26deg) rotateY(-34deg);
 }
 .face{
   position:absolute; left:50%; top:50%;
-  background:var(--front);
-  outline:.6px solid #00000028;
-  transition:background var(--dur) ease, border-color var(--dur) ease;
-  backface-visibility:hidden;
+  background:var(--front); outline:.6px solid #00000028;
+  transition:background var(--dur) ease; backface-visibility:hidden;
 }
 .face.top{ background:var(--top); }
 .face.right{ background:var(--side); }
 .face.front{ background:var(--front); }
-
-/* Platzfarben als Flächentöne (top hell · front · side dunkel) */
-.block.p0{ --top:#7DEB9A; --front:#34c759; --side:#1f8f41; }
-.block.p1{ --top:#6BB8FF; --front:#0a84ff; --side:#0659b0; }
-.block.p2{ --top:#FFC768; --front:#ff9f0a; --side:#c2740a; }
-.block.p3{ --top:#FF8079; --front:#ff3b30; --side:#bf241c; }
-
-/* Gitterlinien (Hunderter-Platte & Tausender-Würfel): 10er-Unterteilung */
+/* Gitterlinien zeigen die 10er-Unterteilung (zählbar) */
 .face.grid{
   background-image:
     repeating-linear-gradient(0deg,  #00000033 0 1px, #0000 1px var(--g)),
@@ -202,7 +155,6 @@ h1,h2,p{margin:0;}
 }
 .face.grid.top{ background-color:var(--top); }
 .face.grid.right{ background-color:var(--side); }
-/* feine Trennlinien auf Einzelwürfeln */
 .cube .face{ outline:.7px solid #0006; }
 .cube .face.top{ box-shadow:inset 0 0 0 1px #ffffff22; }
 
@@ -210,83 +162,54 @@ h1,h2,p{margin:0;}
    TALLY-COUNTER (Klicker mit Odometer)
    =========================================================== */
 .counter{
-  margin:2px auto 4px; width:100%; max-width:430px;
-  display:flex; align-items:center; gap:14px;
-  padding:12px 14px;
-  border-radius:22px;
-  background:
-    linear-gradient(180deg,#e9edf4,#aab4c6 55%,#7f8aa0);
-  box-shadow:
-    0 14px 30px -12px #000b,
-    inset 0 2px 1px #ffffffcc,
-    inset 0 -6px 10px -4px #00000055,
-    inset 0 0 0 1px #ffffff40;
+  margin:2px auto 4px; width:100%; max-width:440px;
+  display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:22px;
+  background:linear-gradient(180deg,#e9edf4,#aab4c6 55%,#7f8aa0);
+  box-shadow:0 14px 30px -12px #000b, inset 0 2px 1px #ffffffcc,
+    inset 0 -6px 10px -4px #00000055, inset 0 0 0 1px #ffffff40;
 }
 .counter .left{ display:flex; flex-direction:column; gap:9px; align-items:center; }
 .odometer{
   display:flex; gap:3px; padding:8px 9px;
-  background:linear-gradient(180deg,#11161f,#1c2433);
-  border-radius:10px;
-  box-shadow:
-    inset 0 4px 8px #000c, inset 0 -2px 4px #ffffff10,
-    0 1px 0 #ffffff90;
+  background:linear-gradient(180deg,#11161f,#1c2433); border-radius:10px;
+  box-shadow:inset 0 4px 8px #000c, inset 0 -2px 4px #ffffff10, 0 1px 0 #ffffff90;
   border:1px solid #05080d;
 }
 .wheel{
-  position:relative;
-  width:30px; height:46px; overflow:hidden;
-  border-radius:5px;
+  position:relative; width:30px; height:46px; overflow:hidden; border-radius:5px;
   background:linear-gradient(180deg,#fbfdff,#dde4ee 50%,#fbfdff);
   box-shadow:inset 0 8px 8px -6px #0009, inset 0 -8px 8px -6px #0009, inset 0 0 0 1px #0003;
 }
-.wheel::before,.wheel::after{
-  content:""; position:absolute; left:0; right:0; height:14px; z-index:3; pointer-events:none;
-}
+.wheel::before,.wheel::after{ content:""; position:absolute; left:0; right:0; height:14px; z-index:3; pointer-events:none; }
 .wheel::before{ top:0; background:linear-gradient(#0006,#0000); }
 .wheel::after{ bottom:0; background:linear-gradient(#0000,#0006); }
-.wheel .strip{
-  position:absolute; left:0; right:0; top:0;
-  display:flex; flex-direction:column;
-  transition:transform .5s var(--ease);
-}
+.wheel .strip{ position:absolute; left:0; right:0; top:0; display:flex; flex-direction:column; transition:transform .5s var(--ease); }
 .wheel .strip span{
   height:46px; display:flex; align-items:center; justify-content:center;
-  font:900 30px/1 "SF Mono",ui-monospace,Menlo,monospace;
-  color:#10161f; font-variant-numeric:tabular-nums;
+  font:900 30px/1 "SF Mono",ui-monospace,Menlo,monospace; font-variant-numeric:tabular-nums;
 }
-.wheel.w3 .strip span{ color:var(--T); }
-.wheel.w2 .strip span{ color:var(--H); }
-.wheel.w1 .strip span{ color:var(--Z); }
-.wheel.w0 .strip span{ color:var(--E); }
+.odometer.n5 .wheel{ width:25px; height:40px; }
+.odometer.n5 .wheel .strip span{ height:40px; font-size:25px; }
 
 .counter .mini{ display:flex; gap:9px; }
 .minibtn{
   width:46px; height:34px; border-radius:9px; border:none;
   font-size:18px; font-weight:900; color:#22303f;
   background:linear-gradient(180deg,#fdfefe,#c4cdda);
-  box-shadow:0 3px 0 #8794a8, inset 0 1px 0 #fff;
-  cursor:pointer;
+  box-shadow:0 3px 0 #8794a8, inset 0 1px 0 #fff; cursor:pointer; touch-action:none;
   transition:transform .06s, box-shadow .06s, opacity .15s;
 }
 .minibtn:active{ transform:translateY(2px); box-shadow:0 1px 0 #8794a8, inset 0 1px 0 #fff; }
 .minibtn.reset{ font-size:15px; }
 .minibtn[disabled]{ opacity:.4; pointer-events:none; }
 
-/* großer Druckknopf +1 */
 .bigbtn{
-  position:relative; flex:0 0 auto;
-  width:104px; height:104px; border-radius:50%;
-  border:none; cursor:pointer; color:#fff;
-  font-size:30px; font-weight:900; letter-spacing:.5px;
-  background:
-    radial-gradient(120% 120% at 35% 25%, #ff8a5c, #ff5d3a 45%, #e23d23 75%, #b62a16);
-  box-shadow:
-    0 12px 0 #8e2113,
-    0 16px 22px -6px #000a,
-    inset 0 3px 6px #ffffff80,
-    inset 0 -10px 16px -6px #00000070;
+  position:relative; flex:0 0 auto; width:104px; height:104px; border-radius:50%;
+  border:none; cursor:pointer; color:#fff; font-size:30px; font-weight:900; letter-spacing:.5px;
+  background:radial-gradient(120% 120% at 35% 25%, #ff8a5c, #ff5d3a 45%, #e23d23 75%, #b62a16);
+  box-shadow:0 12px 0 #8e2113, 0 16px 22px -6px #000a, inset 0 3px 6px #ffffff80, inset 0 -10px 16px -6px #00000070;
   transition:transform .08s ease, box-shadow .08s ease, opacity .2s;
-  display:flex; align-items:center; justify-content:center; flex-direction:column;
+  display:flex; align-items:center; justify-content:center; flex-direction:column; touch-action:none;
 }
 .bigbtn .lbl{ font-size:13px; font-weight:800; opacity:.92; letter-spacing:.5px; margin-top:-3px;}
 .bigbtn:active, .bigbtn.press{
@@ -298,12 +221,13 @@ h1,h2,p{margin:0;}
 
 .hint{ text-align:center; font-size:11.5px; color:var(--ink-dim); padding:2px 12px 8px; font-weight:600;}
 
-@media (max-width:380px){
+@media (max-width:400px){
   .bigbtn{ width:90px; height:90px; font-size:26px;}
   .wheel{ width:26px; height:40px;}
   .wheel .strip span{ height:40px; font-size:26px;}
+  .odometer.n5 .wheel{ width:22px; height:36px; }
+  .odometer.n5 .wheel .strip span{ height:36px; font-size:22px; }
 }
-
 @media (prefers-reduced-motion:reduce){
   *{ transition-duration:0s !important; animation-duration:0s !important; }
 }
@@ -312,18 +236,22 @@ h1,h2,p{margin:0;}
 <body>
   <header class="app-head">
     <h1>🔢 Stellenwerte</h1>
-    <div class="sub">Tausender · Hunderter · Zehner · Einer — von 0 bis 9999</div>
+    <div class="sub" id="sub"></div>
+    <div class="places" id="placesCtl">
+      <span class="plabel">Stellen:</span>
+      <button data-n="3">3</button><button data-n="4">4</button><button data-n="5">5</button>
+    </div>
   </header>
 
   <main class="stage">
     <section class="table-wrap">
-      <div class="cols" id="cols"><!-- 4 Spalten via JS --></div>
+      <div class="cols" id="cols"></div>
       <div id="blocks"></div>
     </section>
 
     <section class="counter" id="counter">
       <div class="left">
-        <div class="odometer" id="odometer"><!-- 4 Räder via JS --></div>
+        <div class="odometer" id="odometer"></div>
         <div class="mini">
           <button class="minibtn" id="btnMinus" aria-label="minus eins">−1</button>
           <button class="minibtn reset" id="btnReset" aria-label="zurücksetzen">↺</button>
@@ -331,98 +259,60 @@ h1,h2,p{margin:0;}
       </div>
       <button class="bigbtn" id="btnPlus" aria-label="plus eins">+1<span class="lbl">drücken</span></button>
     </section>
-    <p class="hint">Klicker drücken oder unter einer Spalte +/− tippen — beide Ansichten zeigen dieselbe Zahl.<br>Tastatur: ↑ +1 · ↓ −1 · 1·2·3·4 erhöhen, q·w·e·r verringern (Tausender·Hunderter·Zehner·Einer) — Taste halten zum Zählen.</p>
+    <p class="hint" id="hint"></p>
   </main>
 
 <script>
 "use strict";
 (function(){
 /* =========================================================================
-   0. Grundlagen
+   0. Stellenwert-Definitionen (echte Mehrsystemblöcke)
+   Maße w,h,d in Einer-Würfel-Einheiten.  rest = Anordnung mehrerer Blöcke
+   einer Stelle in ihrer Spalte; extend = Achse, entlang der 10 Blöcke der
+   nächstkleineren Stelle den Block dieser Stelle bilden.
    ========================================================================= */
-const PLACES = [
-  {p:0, key:'E', name:'Einer',     mag:1,    type:'cube'},
-  {p:1, key:'Z', name:'Zehner',    mag:10,   type:'rod' },
-  {p:2, key:'H', name:'Hunderter', mag:100,  type:'plate'},
-  {p:3, key:'T', name:'Tausender', mag:1000, type:'tcube'},
+const MASTER = [
+  {name:'Einer',         w:1,  h:1,   d:1,  grid:false, step:1,  rest:'x', extend:null, gap:0.0, label:'E'},
+  {name:'Zehner',        w:10, h:1,   d:1,  grid:true,  step:1,  rest:'z', extend:'x',  gap:0.42, label:'Z'},
+  {name:'Hunderter',     w:10, h:1,   d:10, grid:true,  step:1,  rest:'y', extend:'z',  gap:0.55, label:'H'},
+  {name:'Tausender',     w:10, h:10,  d:10, grid:true,  step:1,  rest:'y', extend:'y',  gap:1.6,  label:'T'},
+  {name:'Zehntausender', w:10, h:100, d:10, grid:true,  step:10, rest:'x', extend:'y',  gap:3.0,  label:'ZT'},
 ];
-const FLASHC = ['#34c759','#0a84ff','#ff9f0a','#ff3b30'];
-const U = 22;                 // Basis-Kantenlänge eines Einerwürfels (px)
+const COLORS = [
+  {s:'#34c759', t:'#7DEB9A', f:'#34c759', d:'#1f8f41'}, // Einer  – grün
+  {s:'#0a84ff', t:'#6BB8FF', f:'#0a84ff', d:'#0659b0'}, // Zehner – blau
+  {s:'#ff9f0a', t:'#FFC768', f:'#ff9f0a', d:'#c2740a'}, // Hunderter – bernstein
+  {s:'#ff3b30', t:'#FF8079', f:'#ff3b30', d:'#bf241c'}, // Tausender – rot
+  {s:'#bf5af2', t:'#D99BF7', f:'#bf5af2', d:'#8e3fc0'}, // Zehntausender – violett
+];
+const U = 22;            // Kantenlänge eines Einer-Würfels (px)
 const MAXSCALE = 1.0;
 const reduced = matchMedia('(prefers-reduced-motion:reduce)').matches;
 
-// Isometrische, orthographische Projektion (rotateX(-26) rotateY(-34))
-// Bildschirm-Offset (px) je Welt-Einheit entlang der Achsen:
-const AX = {x:0.8290, y:0.2448};   // +X (rechts)
-const AY = {x:0.0000, y:0.8988};   // +Y (nach unten)
-const AZ = {x:-0.5592,y:0.3631};   // +Z (Tiefe, zum Betrachter)
-const DEPTH = (lx,ly,lz)=> 0.5025*lx - 0.4384*ly + 0.7448*lz;  // größer = vorne
-function proj(lx,ly,lz){
-  return {
-    x: U*(AX.x*lx + AY.x*ly + AZ.x*lz),
-    y: U*(AX.y*lx + AY.y*ly + AZ.y*lz),
-  };
-}
+let N = 4;               // Anzahl der Stellen (3/4/5)
+let MAX = 9999;          // 10^N - 1
+function pow10(p){ return Math.round(Math.pow(10,p)); }
+
+/* Isometrische, orthographische Projektion (rotateX(-26) rotateY(-34)) */
+const AX={x:0.8290,y:0.2448}, AY={x:0.0,y:0.8988}, AZ={x:-0.5592,y:0.3631};
+const DEPTH=(lx,ly,lz)=> 0.5025*lx - 0.4384*ly + 0.7448*lz;
+function proj(lx,ly,lz){ return { x:U*(AX.x*lx+AY.x*ly+AZ.x*lz), y:U*(AX.y*lx+AY.y*ly+AZ.y*lz) }; }
 
 /* =========================================================================
-   1. DOM-Aufbau
+   1. Block-Objekte (persistente Identität)
    ========================================================================= */
-const colsEl = document.getElementById('cols');
 const blocksEl = document.getElementById('blocks');
-const frames = [], digitEls = [], plusBtns = [], minusBtns = [], badgeEls = [];
-
-// Spaltenreihenfolge im UI: Tausender..Einer (links→rechts)
-const ORDER = [3,2,1,0];
-ORDER.forEach(p=>{
-  const info = PLACES[p];
-  const col = document.createElement('div');
-  col.className='col'; col.dataset.p=p;
-  col.innerHTML =
-    `<div class="col-head"><div class="name">${info.name}</div><div class="digit" id="dig${p}">0</div></div>
-     <div class="frame" id="frame${p}"><div class="badge" id="badge${p}">🔁 +1</div></div>
-     <div class="col-foot">
-       <button class="pbtn minus" data-p="${p}" data-d="-1">−</button>
-       <button class="pbtn plus"  data-p="${p}" data-d="1">+</button>
-     </div>`;
-  colsEl.appendChild(col);
-  frames[p]=col.querySelector('.frame');
-  digitEls[p]=col.querySelector('.digit');
-  badgeEls[p]=col.querySelector('.badge');
-  frames[p].style.setProperty('--flashc',FLASHC[p]);
-  badgeEls[p].style.setProperty('--flashc',FLASHC[p]);
-  col.querySelectorAll('.pbtn').forEach(b=>{
-    if(b.classList.contains('plus')) plusBtns[p]=b; else minusBtns[p]=b;
-  });
-});
-
-// Odometer (4 Räder, Tausender..Einer)
-const odEl = document.getElementById('odometer');
-const wheels = [];
-ORDER.forEach(p=>{
-  const w = document.createElement('div');
-  w.className='wheel w'+p;
-  const strip = document.createElement('div'); strip.className='strip';
-  // Streifen: [9,0,1,2,3,4,5,6,7,8,9,0]  → Index d+1 zeigt Ziffer d
-  const seq=[9,0,1,2,3,4,5,6,7,8,9,0];
-  seq.forEach(n=>{ const s=document.createElement('span'); s.textContent=n; strip.appendChild(s); });
-  w.appendChild(strip);
-  odEl.appendChild(w);
-  wheels[p]={el:w, strip, idx:1}; // idx=1 → Ziffer 0
-});
-
-/* =========================================================================
-   2. Block-Objekte  (persistente Identität)
-   ========================================================================= */
 let _id=0;
-const allBlocks=new Set();   // alle lebenden Blöcke (für z-Index-Beruhigung)
-function makeBox(w,h,d,grid){
+const allBlocks=new Set();
+
+function makeBox(w,h,d,grid,stepPx){     // Maße in px
   const box=document.createElement('div'); box.className='box';
-  const g = grid ? ' grid':'';
-  const gv = (Math.min(w,d))/10; // Gittermaß für Hunderter/Tausender
+  box.style.width=w+'px'; box.style.height=h+'px';
+  const g=grid?' grid':'';
   const mk=(cls,fw,fh,tf)=>{
     const f=document.createElement('div'); f.className='face '+cls+g;
     f.style.width=fw+'px'; f.style.height=fh+'px';
-    if(grid) f.style.setProperty('--g', (cls==='right'? d/10 : w/10)+'px');
+    if(grid) f.style.setProperty('--g', stepPx+'px');
     f.style.transform='translate(-50%,-50%) '+tf;
     return f;
   };
@@ -431,165 +321,131 @@ function makeBox(w,h,d,grid){
   box.appendChild(mk('right', d, h, `rotateY(90deg) translateZ(${w/2}px)`));
   return box;
 }
-// Block-Konstruktoren — Maße in Welt-Einheiten (× U)
-function newBlock(type, colorPlace){
-  const el=document.createElement('div'); el.className='block p'+colorPlace;
-  let box;
-  if(type==='cube'){ el.classList.add('cube'); box=makeBox(U,U,U,false); }
-  else if(type==='plate'){ box=makeBox(10*U,1*U,10*U,true); }
-  else if(type==='tcube'){ box=makeBox(10*U,10*U,10*U,true); }
-  el.appendChild(box);
+function dim(p){ const m=MASTER[p]; return {w:m.w, h:m.h, d:m.d}; }
+function newBlock(p){
+  const m=MASTER[p];
+  const el=document.createElement('div'); el.className='block'+(p===0?' cube':'');
+  el.appendChild(makeBox(m.w*U, m.h*U, m.d*U, m.grid, m.step*U));
   blocksEl.appendChild(el);
-  const b={id:++_id, type, colorPlace, el, box,
-          // aktuelle Pose (Bildschirm), für FLIP-freie Übergänge:
-          place:colorPlace, lx:0, ly:0, lz:0, dim:dimOf(type), born:false};
+  const b={id:++_id, place:p, el, dim:dim(p), born:false};
+  setColor(b,p);
   allBlocks.add(b);
   return b;
 }
-function dimOf(type){
-  if(type==='cube') return {w:1,h:1,d:1};
-  if(type==='plate')return {w:10,h:1,d:10};
-  return {w:10,h:10,d:10};
-}
 function setColor(b, place){
-  if(b.colorPlace!==place){ b.colorPlace=place; b.el.className='block p'+place+(b.type==='cube'?' cube':''); }
+  b.colorPlace=place; const c=COLORS[place];
+  b.el.style.setProperty('--top',c.t); b.el.style.setProperty('--front',c.f); b.el.style.setProperty('--side',c.d);
 }
-function destroy(b){ if(b.el && b.el.parentNode) b.el.parentNode.removeChild(b.el); b.dead=true; allBlocks.delete(b); }
+function destroy(b){ if(b.el&&b.el.parentNode) b.el.parentNode.removeChild(b.el); b.dead=true; allBlocks.delete(b); }
 
 /* =========================================================================
-   3. Modell  (Quelle der Wahrheit fürs Rendern)
-   einer:[cube...]  zehner:[rod...] rod=[cube×10]  hunderter:[plate...] tausender:[tcube...]
-   index 0 = unten (ältester), push = oben (neu).
+   2. Modell — M[p] = Liste der (massiven) Blöcke der Stelle p
+   index 0 = unten/vorn (ältester), push = oben/neu.
    ========================================================================= */
-const M = { 0:[], 1:[], 2:[], 3:[] };   // Hunderter/Tausender: Liste der plate/tcube; Zehner: Liste der Stäbe; Einer: Liste der Würfel
+let M = {};
 let value = 0;
-let flying = [];           // transiente Blöcke mit expliziten Posen {b, place, lx,ly,lz}
-let busy = false;
-
-function countAt(p){
-  if(p===1) return M[1].length;          // Anzahl Stäbe
-  return M[p].length;
-}
+let flying = [];         // transiente Blöcke {b, place, lx,ly,lz}
+function countAt(p){ return M[p] ? M[p].length : 0; }
 
 /* =========================================================================
-   4. Layout — berechnet Ziel-Pose jedes Blocks und wendet Transform an
+   3. Posen  (lokale Welt-Koordinaten relativ zur Spalten-Basis)
    ========================================================================= */
-let sceneRect=null;
-function refreshRects(){ sceneRect = blocksEl.getBoundingClientRect(); }
-
-// Lücken (Welt-Einheiten) — Blöcke werden in der Orientierung gestapelt,
-// in der sie zum nächsten Stellenwert gebündelt werden (keine Drehung nötig).
-const GAP_Z = 0.35;   // zwischen Zehner-Stäben (Zehner zählbar)
-const GAP_H = 0.6;    // zwischen Hunderter-Platten (Hunderter zählbar)
-const GAP_T = 1.6;    // zwischen Tausender-Würfeln (Tausender zählbar)
-
-// liefert lokale Pose (Welt-Einheiten, relativ zur Spalten-Basis) eines Blocks
-// Einer: waagerechte Reihe (→ bildet direkt den Stab)
-function poseEiner(i){ return {lx:(i-4.5), ly:-0.5, lz:0}; }
-// Zehner: Stäbe flach am Boden, in der Tiefe nebeneinander (→ bilden direkt die Platte)
-function poseRodCube(r,k){ return {lx:(k-4.5), ly:-0.5, lz:-r*(1+GAP_Z)}; }
-// Hunderter: Platten flach übereinander gestapelt (→ bilden direkt den Würfel)
-function posePlate(i){ return {lx:0, ly:-(i*(1+GAP_H)+0.5), lz:0}; }
-// Tausender: Würfel übereinander, mit Lücke zum Zählen
-function poseTcube(i){ return {lx:0, ly:-(i*(10+GAP_T)+5), lz:0}; }
-
-// sammelt alle Blöcke je Spalte mit ihren lokalen Posen
+// Ruhepose des i-ten Blocks der Stelle p
+function restPose(p, i){
+  const D=dim(p), m=MASTER[p], gap=m.gap;
+  let lx=0, ly=-D.h/2, lz=0;
+  if(m.rest==='x')      lx = i*(D.w+gap);
+  else if(m.rest==='z') lz = -i*(D.d+gap);
+  else                  ly = -(i*(D.h+gap) + D.h/2);   // 'y' = nach oben gestapelt
+  return {lx,ly,lz};
+}
+// 10 Tile-Posen: wie 10 Blöcke der Stelle p-1 den p-Block am Slot füllen
+function tilePoses(p, slot){
+  const c=restPose(p,slot), sub=dim(p-1), ax=MASTER[p].extend, res=[];
+  for(let k=0;k<10;k++){
+    const off=k-4.5; let lx=c.lx, ly=c.ly, lz=c.lz;
+    if(ax==='x')      lx += off*sub.w;
+    else if(ax==='z') lz += off*sub.d;
+    else              ly += off*sub.h;
+    res.push({b:null, place:p, lx,ly,lz});
+  }
+  return res;
+}
 function gatherColumn(p){
   const arr=[];
-  if(p===0){ M[0].forEach((b,i)=>arr.push([b,poseEiner(i)])); }
-  else if(p===1){ M[1].forEach((rod,r)=>rod.forEach((b,k)=>arr.push([b,poseRodCube(r,k)]))); }
-  else if(p===2){ M[2].forEach((b,i)=>arr.push([b,posePlate(i)])); }
-  else if(p===3){ M[3].forEach((b,i)=>arr.push([b,poseTcube(i)])); }
-  // fliegende Blöcke dieser Spalte
+  (M[p]||[]).forEach((b,i)=>arr.push([b, restPose(p,i)]));
   flying.forEach(f=>{ if(f.place===p) arr.push([f.b,{lx:f.lx,ly:f.ly,lz:f.lz}]); });
   return arr;
 }
 
-// berechnet Bildschirm-Ursprung + Skalierung je Spalte (auto-fit inkl. 3D-Überhang)
+/* =========================================================================
+   4. Layout — Auto-Fit je Spalte + Transform anwenden
+   ========================================================================= */
+let sceneRect=null;
+function refreshRects(){ sceneRect = blocksEl.getBoundingClientRect(); }
+const Z_BASE=1000, Z_TRANSIT=100000;
+
 function columnTransform(p, items){
   const fr = frames[p].getBoundingClientRect();
-  const fw = fr.width, fh = fr.height;
-  const padX=10, padY=12;
-  // Inhalts-Bounding über alle Eckpunkte bei scale=1
+  const fw=fr.width, fh=fr.height, padX=10, padY=12;
+  if(items.length===0) return {ox:fr.left-sceneRect.left+fw/2, oy:fr.top-sceneRect.top+fh-padY, s:0.6};
   let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
-  if(items.length===0){ return {ox:fr.left-sceneRect.left+fw/2, oy:fr.top-sceneRect.top+fh-padY, s:0.6}; }
   for(const [b,pose] of items){
     const d=b.dim;
     for(let sx=-1;sx<=1;sx+=2)for(let sy=-1;sy<=1;sy+=2)for(let sz=-1;sz<=1;sz+=2){
-      const cx=pose.lx+sx*d.w/2, cy=pose.ly+sy*d.h/2, cz=pose.lz+sz*d.d/2;
-      const q=proj(cx,cy,cz);
+      const q=proj(pose.lx+sx*d.w/2, pose.ly+sy*d.h/2, pose.lz+sz*d.d/2);
       if(q.x<minX)minX=q.x; if(q.x>maxX)maxX=q.x;
       if(q.y<minY)minY=q.y; if(q.y>maxY)maxY=q.y;
     }
   }
   const cw=Math.max(1,maxX-minX), ch=Math.max(1,maxY-minY);
-  let s=Math.min((fw-padX*2)/cw,(fh-padY*2)/ch, MAXSCALE);
-  s=Math.max(0.08,s);
-  // horizontal zentrieren, unten ausrichten (mit Überhang-Polster oben & unten)
-  const ox = (fr.left-sceneRect.left) + fw/2 - s*(minX+maxX)/2;
-  const oy = (fr.top -sceneRect.top ) + fh - padY - s*maxY;
+  let s=Math.max(0.06, Math.min((fw-padX*2)/cw,(fh-padY*2)/ch, MAXSCALE));
+  const ox=(fr.left-sceneRect.left)+fw/2 - s*(minX+maxX)/2;
+  const oy=(fr.top -sceneRect.top )+fh - padY - s*maxY;
   return {ox,oy,s};
 }
-
-const Z_BASE=1000, Z_TRANSIT=100000;
-// gibt true zurück, wenn der Block sich animiert bewegt (für z-Beruhigung)
 function applyPose(b, ox,oy,s, pose, instant){
   const q=proj(pose.lx,pose.ly,pose.lz);
   const x=ox+s*q.x, y=oy+s*q.y;
-  const depth = Math.round(DEPTH(pose.lx,pose.ly,pose.lz)*4);
-  const zRest = Z_BASE + depth;
-  b._zRest = zRest;
-  const moved = (b._x!=null) && (Math.abs(x-b._x)+Math.abs(y-b._y) > 1.5);
+  const depth=Math.round(DEPTH(pose.lx,pose.ly,pose.lz)*4);
+  b._zRest=Z_BASE+depth;
+  const moved=(b._x!=null)&&(Math.abs(x-b._x)+Math.abs(y-b._y)>1.5);
   if(instant){
     const t=b.el.style.transition; b.el.style.transition='none';
     b.el.style.transform=`translate(${x}px,${y}px) scale(${s})`;
     void b.el.offsetWidth; b.el.style.transition=t;
-    b.el.style.zIndex = zRest;
+    b.el.style.zIndex=b._zRest;
   } else {
     b.el.style.transform=`translate(${x}px,${y}px) scale(${s})`;
-    // bewegte Blöcke fliegen in einer hohen Transit-Ebene über ruhende
-    // Stapel (kein Durchstoßen); danach wieder auf die echte Tiefe setzen.
-    b.el.style.zIndex = moved ? (Z_TRANSIT + depth) : zRest;
+    b.el.style.zIndex = moved ? (Z_TRANSIT+depth) : b._zRest;
   }
   b._x=x; b._y=y; b._s=s;
   return moved && !instant;
 }
-
 function layout(instant){
-  refreshRects();            // immer aktuelle Maße (robust gegen Zoom/Reflow)
+  refreshRects();
   let anyMoved=false, anyBorn=false;
-  for(let p=0;p<4;p++){
+  for(let p=0;p<N;p++){
     const items=gatherColumn(p);
     const ct=columnTransform(p,items);
     for(const [b,pose] of items){
-      // Newborn: erst unsichtbar an Zielpose setzen, dann einblenden
       if(!b.born){
-        b.born=true;
-        b.el.style.opacity='0';
+        b.born=true; b.el.style.opacity='0';
         applyPose(b,ct.ox,ct.oy,ct.s,pose,true);
-        if(!instant){
-          // Während des Einblendens in dieselbe Transit-Ebene wie bewegte
-          // Nachbarn, sonst rendert der neue Block hinter ihnen (Clipping).
-          b.el.style.zIndex = Z_TRANSIT + (b._zRest - Z_BASE);
-          anyBorn=true;
-        }
+        if(!instant){ b.el.style.zIndex=Z_TRANSIT+(b._zRest-Z_BASE); anyBorn=true; }
         requestAnimationFrame(()=>{ b.el.style.opacity='1'; });
-      } else {
-        if(applyPose(b,ct.ox,ct.oy,ct.s,pose,instant)) anyMoved=true;
-      }
+      } else if(applyPose(b,ct.ox,ct.oy,ct.s,pose,instant)) anyMoved=true;
     }
   }
   if(anyMoved||anyBorn) scheduleZSettle();
 }
 
 /* =========================================================================
-   5. Geschwindigkeit / Compounding
+   5. Geschwindigkeit / verkettete Übergaben
    ========================================================================= */
-let lastAct=0;
+let lastAct=0, dCur=0.6;
 function dur(){
-  // schnelle Folgeaktionen → kürzere Dauer (snappy), aber nie ruckartig
-  const now=performance.now();
-  const gap=now-lastAct; lastAct=now;
+  const now=performance.now(), gap=now-lastAct; lastAct=now;
   if(reduced) return 0;
   if(gap<160) return 0.22;
   if(gap<340) return 0.34;
@@ -597,24 +453,6 @@ function dur(){
 }
 function setDur(s){ document.documentElement.style.setProperty('--dur', s+'s'); }
 
-/* =========================================================================
-   6. Umbündeln — Carry / Borrow (das Herzstück)
-   ========================================================================= */
-
-function flashGain(p, label){
-  const f=frames[p]; f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');
-  const bd=badgeEls[p]; bd.textContent='🔁 '+label;
-  bd.classList.remove('show'); void bd.offsetWidth; bd.classList.add('show');
-}
-
-// erzeugt einen Stab (10 Würfel) als Array
-function spawnRodCubes(colorPlace){
-  const rod=[]; for(let k=0;k<10;k++) rod.push(newBlock('cube',colorPlace)); return rod;
-}
-
-let dCur=0.6;
-
-// Ausstehende visuelle Aufräumarbeiten (Übergaben). settle() schließt sie sofort ab.
 let cleanups=[];
 function later(fn,ms){
   if(reduced){ fn(); return null; }
@@ -622,326 +460,275 @@ function later(fn,ms){
   tok.id=setTimeout(()=>{ cleanups=cleanups.filter(c=>c!==tok); fn(); }, ms);
   cleanups.push(tok); return tok;
 }
-function settle(){
-  // Verkettete Übergaben (gestaffelte Kaskade) komplett abarbeiten → Modell == value
+function settle(){            // verkettete Kaskade sofort komplett abarbeiten
   let guard=0;
-  while(cleanups.length && guard++<60){
+  while(cleanups.length && guard++<80){
     const cs=cleanups; cleanups=[];
     cs.forEach(c=>{ clearTimeout(c.id); try{ c.fn(); }catch(e){} });
   }
 }
-
-// nach einer Bewegung jeden Block wieder auf seine echte Tiefen-z-Ebene setzen
 let zTok=null;
-function applyRestingZ(){
-  zTok=null;
-  allBlocks.forEach(b=>{ if(b.el && b._zRest!=null) b.el.style.zIndex=b._zRest; });
-}
+function applyRestingZ(){ zTok=null; allBlocks.forEach(b=>{ if(b.el&&b._zRest!=null) b.el.style.zIndex=b._zRest; }); }
 function scheduleZSettle(){
   if(reduced){ applyRestingZ(); return; }
   if(zTok){ clearTimeout(zTok.id); cleanups=cleanups.filter(c=>c!==zTok); }
   zTok=later(applyRestingZ, dCur*1000+90);
 }
-
-// setzt einen frischen Block sofort an eine Quell-Pose (für „Aufspalten")
-function emanate(b, src){
+function emanate(b, src){     // frischen Block sofort an Quell-Pose setzen (Aufspalten)
   b.born=true;
   if(!src || src.x==null){ b._x=0;b._y=0;b._s=1; return; }
   b._x=src.x; b._y=src.y; b._s=src.s;
-  const t=b.el.style.transition; b.el.style.transition='none';
-  b.el.style.opacity='1';
+  const t=b.el.style.transition; b.el.style.transition='none'; b.el.style.opacity='1';
   b.el.style.transform=`translate(${src.x}px,${src.y}px) scale(${src.s})`;
   void b.el.offsetWidth; b.el.style.transition=t;
 }
 
-// ---- HINZUFÜGEN an Platz p (ein Block) ----
-function pushUnit(p){
-  if(p===0) M[0].push(newBlock('cube',0));
-  else if(p===1) M[1].push(spawnRodCubes(1));
-  else if(p===2) M[2].push(newBlock('plate',2));
-  else M[3].push(newBlock('tcube',3));
-}
-function addAtPlace(p){
-  pushUnit(p);
-  layout(false);
-  cascadeUp(p);          // Übertrag nach oben — GESTAFFELT (eine Stufe nach der anderen)
+/* =========================================================================
+   6. Bündeln / Entbündeln — einheitliche Übergabe (Verschmelzen)
+   ========================================================================= */
+function flashGain(p, label){
+  const f=frames[p]; f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');
+  const bd=badgeEls[p]; bd.textContent='🔁 '+label;
+  bd.classList.remove('show'); void bd.offsetWidth; bd.classList.add('show');
 }
 
-// Gestaffelte Kaskade: jede Stufe schließt ihre Übergabe ab, bevor die nächste
-// sie aufgreift. Sonst greift z. B. Hunderter→Tausender die noch entstehende
-// Hunderter-Platte mitten in deren Übergabe ab (die „klebt" dann fest).
-// settle() arbeitet die Kette bei Unterbrechung sofort komplett ab.
-function staggerFor(p){
-  // p=0: Stab bildet sich sofort → kurzer Versatz; p=1: Übergabe an Platte erst
-  // vollständig abwarten, dann den Würfel formen.
-  return p===0 ? Math.max(120, dCur*1000*0.42) : dCur*1000 + 70;
-}
+function pushUnit(p){ M[p].push(newBlock(p)); }     // einen massiven Block oben anlegen
+function addAtPlace(p){ pushUnit(p); layout(false); cascadeUp(p); }
+
+function staggerFor(p){ return p===0 ? Math.max(120, dCur*1000*0.42) : dCur*1000 + 70; }
 function cascadeUp(p){
-  if(p>2 || countAt(p)<10) return;
-  bundleUp(p);
-  layout(false);
-  if(p<2) later(()=>cascadeUp(p+1), staggerFor(p));
+  if(p>N-2 || countAt(p)<10) return;
+  bundleUp(p); layout(false);
+  if(p<N-2) later(()=>cascadeUp(p+1), staggerFor(p));
 }
-
-// 10 Blöcke von Platz p bündeln zu 1 Block auf Platz p+1 (Modell synchron)
+// 10 Blöcke der Stelle p verschmelzen zu 1 Block der Stelle p+1
 function bundleUp(p){
-  flashGain(p+1, '+1');     // höherer Platz bekommt 1 (bündeln)
-  if(p===0){
-    // 10 Einer-Würfel → genau diese Würfel werden zum Stab (Identität bleibt, Umfärben)
-    const cubes=M[0].splice(0,10);
-    cubes.forEach(c=>setColor(c,1));
-    M[1].push(cubes);
-  } else if(p===1){
-    // 10 Stäbe (100 Würfel) fließen in die Plattenform → Übergabe an die Platte
-    const rods=M[1].splice(0,10);
-    const cubes=[].concat(...rods);
-    const plate=newBlock('plate',2); plate.born=true; plate.el.style.opacity='0';
-    M[2].push(plate); const slot=M[2].length-1;
-    const ply=posePlate(slot).ly;   // Würfel füllen exakt die Ruheform der Platte
-    // Tiefen-Reihenfolge erhalten: vorderster Stab (r=0) → vorderste Plattenreihe.
-    // Sonst kreuzen sich die Stäbe (sieht aus wie Drehen).
-    cubes.forEach((c,n)=>{ setColor(c,2); const r=Math.floor(n/10);
-      flying.push({b:c, place:2, lx:(n%10)-4.5, ly:ply, lz:4.5-r}); });
-    const t=dCur*1000;
-    later(()=>{ plate.el.style.opacity='1'; }, t*0.72);
-    later(()=>{                       // Übergabe abschließen
-      flying=flying.filter(f=>!cubes.includes(f.b));
-      cubes.forEach(c=>{ c.el.style.opacity='0'; later(()=>destroy(c),180); });
-      plate.el.style.opacity='1';
-      layout(true);
-    }, t+30);
-  } else if(p===2){
-    // 10 Platten stapeln zur Würfelform → Übergabe an den Tausender-Würfel
-    const plates=M[2].splice(0,10);
-    const tc=newBlock('tcube',3); tc.born=true; tc.el.style.opacity='0';
-    M[3].push(tc); const slot=M[3].length-1;
-    const base=slot*(10+GAP_T);     // Platten stapeln sich zur Würfelform
-    plates.forEach((pl,n)=>{ setColor(pl,3); pl.el.style.opacity='1';
-      flying.push({b:pl, place:3, lx:0, ly:-(base+n+0.5), lz:0}); });
-    const t=dCur*1000;
-    later(()=>{ tc.el.style.opacity='1'; }, t*0.72);
-    later(()=>{
-      flying=flying.filter(f=>!plates.includes(f.b));
-      plates.forEach(pl=>{ pl.el.style.opacity='0'; later(()=>destroy(pl),180); });
-      tc.el.style.opacity='1';
-      layout(true);
-    }, t+30);
-  }
+  flashGain(p+1, '+1');
+  const lows=M[p].splice(0,10);
+  const hi=newBlock(p+1); hi.born=true; hi.el.style.opacity='0';
+  M[p+1].push(hi); const slot=M[p+1].length-1;
+  const tp=tilePoses(p+1, slot);
+  lows.forEach((b,k)=>{ setColor(b,p+1); flying.push({b, place:p+1, lx:tp[k].lx, ly:tp[k].ly, lz:tp[k].lz}); });
+  const t=dCur*1000;
+  later(()=>{ hi.el.style.opacity='1'; }, t*0.72);
+  later(()=>{                       // Übergabe abschließen: die 10 Teile verschmelzen
+    flying=flying.filter(f=>!lows.includes(f.b));
+    lows.forEach(b=>{ b.el.style.opacity='0'; later(()=>destroy(b),180); });
+    hi.el.style.opacity='1'; layout(true);
+  }, t+30);
 }
 
-// ---- ENTFERNEN an Platz p (ein Block) ----
-function popUnit(p){
-  if(p===0){ const c=M[0].pop(); if(c){ c.el.style.opacity='0'; later(()=>destroy(c),200);} }
-  else if(p===1){ const rod=M[1].pop(); if(rod){ rod.forEach(c=>c.el.style.opacity='0'); later(()=>rod.forEach(destroy),200);} }
-  else if(p===2){ const pl=M[2].pop(); if(pl){ pl.el.style.opacity='0'; later(()=>destroy(pl),200);} }
-  else { const tc=M[3].pop(); if(tc){ tc.el.style.opacity='0'; later(()=>destroy(tc),200);} }
-}
-function removeAtPlace(p){
-  if(countAt(p)===0) borrowDown(p+1);   // Modell synchron auffüllen (kaskadiert)
-  popUnit(p);
-  layout(false);
-}
-
-// 1 Block von Platz p in 10 Blöcke auf Platz p-1 aufspalten (Modell synchron)
+function popUnit(p){ const b=M[p].pop(); if(b){ b.el.style.opacity='0'; later(()=>destroy(b),200);} }
+function removeAtPlace(p){ if(countAt(p)===0) borrowDown(p+1); popUnit(p); layout(false); }
+// 1 Block der Stelle p in 10 Blöcke der Stelle p-1 aufspalten
 function borrowDown(p){
   if(countAt(p)===0) borrowDown(p+1);
-  flashGain(p-1, '+10');    // niedrigerer Platz bekommt 10 (entbündeln)
-  if(p===1){
-    // ein Stab → 10 Einer (dieselben Würfel, umfärben grün)
-    const rod=M[1].pop();
-    rod.forEach(c=>{ setColor(c,0); M[0].push(c); });
-  } else if(p===2){
-    // eine Platte → 10 Stäbe (100 Würfel quellen aus der Platte)
-    const plate=M[2].pop();
-    const src={x:plate._x,y:plate._y,s:plate._s};
-    const cubes=[]; for(let i=0;i<100;i++){ const c=newBlock('cube',1); emanate(c,src); cubes.push(c); }
-    for(let r=0;r<10;r++) M[1].push(cubes.slice(r*10,r*10+10));
-    plate.el.style.opacity='0'; later(()=>destroy(plate),180);
-  } else if(p===3){
-    // ein Tausender-Würfel → 10 Platten
-    const tc=M[3].pop();
-    const src={x:tc._x,y:tc._y,s:tc._s};
-    for(let i=0;i<10;i++){ const pl=newBlock('plate',2); emanate(pl,src); M[2].push(pl); }
-    tc.el.style.opacity='0'; later(()=>destroy(tc),180);
-  }
+  flashGain(p-1, '+10');
+  const hi=M[p].pop();
+  const src={x:hi._x, y:hi._y, s:hi._s};
+  for(let k=0;k<10;k++){ const b=newBlock(p-1); setColor(b,p-1); emanate(b,src); M[p-1].push(b); }
+  hi.el.style.opacity='0'; later(()=>destroy(hi),180);
 }
 
 /* =========================================================================
-   7. Reduced-Motion / Settle: Modell hart aus value aufbauen
+   7. Hartaufbau aus value (Reduced-Motion / Reset / Stellenwechsel)
    ========================================================================= */
 function clearAll(){
   cleanups.forEach(c=>{ if(c&&c.id) clearTimeout(c.id); }); cleanups=[];
-  flying=[];
-  blocksEl.innerHTML=''; M[0]=[];M[1]=[];M[2]=[];M[3]=[];
+  flying=[]; blocksEl.innerHTML='';
+  M={}; for(let p=0;p<N;p++) M[p]=[];
 }
-function rebuildFromValue(v, instant){
+function rebuildFromValue(v){
   clearAll();
-  const dig=[v%10, Math.floor(v/10)%10, Math.floor(v/100)%10, Math.floor(v/1000)%10];
-  for(let i=0;i<dig[0];i++) M[0].push(newBlock('cube',0));
-  for(let r=0;r<dig[1];r++) M[1].push(spawnRodCubes(1));
-  for(let i=0;i<dig[2];i++) M[2].push(newBlock('plate',2));
-  for(let i=0;i<dig[3];i++) M[3].push(newBlock('tcube',3));
-  // alle als geboren markieren (kein Einblenden bei Hartaufbau)
-  [].concat(M[0],[].concat(...M[1]),M[2],M[3]).forEach(b=>b.born=true);
+  for(let p=0;p<N;p++){ const dgt=Math.floor(v/pow10(p))%10; for(let i=0;i<dgt;i++) M[p].push(newBlock(p)); }
+  for(let p=0;p<N;p++) M[p].forEach(b=>b.born=true);
   refreshRects(); layout(true);
 }
 
 /* =========================================================================
-   8. Öffentliche Aktionen + Guardrails
+   8. Anzeige · Odometer · Guardrails
    ========================================================================= */
-function setDigits(){
-  for(let p=0;p<4;p++){ digitEls[p].textContent = Math.floor(value/PLACES[p].mag)%10; }
-}
+function setDigits(){ for(let p=0;p<N;p++) digitEls[p].textContent = Math.floor(value/pow10(p))%10; }
 function rollOdometer(oldV,newV){
   const dir = newV>=oldV ? 1 : -1;
-  for(let p=0;p<4;p++){
-    const oldD=Math.floor(oldV/PLACES[p].mag)%10;
-    const newD=Math.floor(newV/PLACES[p].mag)%10;
+  for(let p=0;p<N;p++){
+    const oldD=Math.floor(oldV/pow10(p))%10, newD=Math.floor(newV/pow10(p))%10;
     if(oldD===newD) continue;
     const w=wheels[p];
-    let steps = dir>0 ? ((newD-oldD+10)%10) : -(((oldD-newD)+10)%10);
-    w.idx += steps;
+    w.idx += dir>0 ? ((newD-oldD+10)%10) : -(((oldD-newD)+10)%10);
     w.strip.style.transition = reduced?'none':'transform .5s var(--ease)';
-    const cellH = w.el.clientHeight;
+    const cellH=w.el.clientHeight;
     w.strip.style.transform=`translateY(${-w.idx*cellH}px)`;
-    // nach dem Rollen in den Basisbereich (1..10) zurücksetzen
-    const norm=()=>{
-      let ni=w.idx; while(ni>10) ni-=10; while(ni<1) ni+=10;
+    const norm=()=>{ let ni=w.idx; while(ni>10) ni-=10; while(ni<1) ni+=10;
       if(ni!==w.idx){ w.idx=ni; w.strip.style.transition='none';
-        w.strip.style.transform=`translateY(${-w.idx*cellH}px)`; void w.strip.offsetWidth; }
-    };
+        w.strip.style.transform=`translateY(${-w.idx*cellH}px)`; void w.strip.offsetWidth; } };
     if(reduced) norm(); else setTimeout(norm,520);
   }
 }
 function updateGuards(){
-  // Klicker
-  document.getElementById('btnPlus').disabled  = value>=9999;
+  document.getElementById('btnPlus').disabled  = value>=MAX;
   document.getElementById('btnMinus').disabled = value<=0;
   document.getElementById('btnReset').disabled = value===0;
-  for(let p=0;p<4;p++){
-    const mag=PLACES[p].mag;
-    const dgt=Math.floor(value/mag)%10;
-    // "+": deaktivieren, wenn das Erhöhen 9999 überschreiten würde …
-    let plusDis = (value+mag>9999);
-    // … außer Einer darf bei 9 bündeln (bleibt aktiv, solange value<9999)
-    if(p===0) plusDis = (value>=9999);
-    plusBtns[p].disabled = plusDis;
-    // "−": deaktivieren, wenn dieser Platz nichts beiträgt bzw. value zu klein
-    minusBtns[p].disabled = (value < mag);
+  for(let p=0;p<N;p++){
+    const mag=pow10(p);
+    plusBtns[p].disabled  = (p===0) ? value>=MAX : (value+mag>MAX);
+    minusBtns[p].disabled = value < mag;
   }
 }
 
-function act(delta){
-  const oldV=value;
-  let newV=value+delta;
-  if(newV<0||newV>9999) return;
-  settle();                       // laufende Übergaben abschließen → Modell == value
-  value=newV;
-  dCur=dur(); setDur(dCur);
-  rollOdometer(oldV,newV);
-  setDigits(); updateGuards();
-  if(reduced){ rebuildFromValue(value,true); return; }
-  // gleiche Würfel-Choreografie wie Platz-Buttons:
-  if(delta>0) addAtPlace(magToPlace(delta));
-  else        removeAtPlace(magToPlace(-delta));
-}
-function magToPlace(m){ return m===1?0:m===10?1:m===100?2:3; }
-
+/* =========================================================================
+   9. Aktionen (zentral)
+   ========================================================================= */
 function placeAction(p, d){
-  const mag=PLACES[p].mag;
-  const oldV=value; let newV=value+d*mag;
-  if(newV<0||newV>9999) return;
+  const mag=pow10(p), oldV=value, newV=value+d*mag;
+  if(newV<0||newV>MAX) return;
   settle();
-  value=newV;
-  dCur=dur(); setDur(dCur);
+  value=newV; dCur=dur(); setDur(dCur);
   rollOdometer(oldV,newV); setDigits(); updateGuards();
-  if(reduced){ rebuildFromValue(value,true); return; }
+  if(reduced){ rebuildFromValue(value); return; }
   if(d>0) addAtPlace(p); else removeAtPlace(p);
+}
+function placeChanged(p,d){ const b=value; placeAction(p,d); return value!==b; }
+function doReset(){
+  if(value===0) return;
+  settle(); const oldV=value; value=0; dCur=dur(); setDur(dCur);
+  rollOdometer(oldV,0); setDigits(); updateGuards(); rebuildFromValue(0);
 }
 
 /* =========================================================================
-   9. Verdrahtung
+   10. Wiederholungs-Steuerung (Halten → fortlaufend) für Tasten & Knöpfe
    ========================================================================= */
-const big=document.getElementById('btnPlus');
-big.addEventListener('click',()=>{ if(value<9999){ big.classList.add('press'); setTimeout(()=>big.classList.remove('press'),110); act(1);} });
-document.getElementById('btnMinus').addEventListener('click',()=>act(-1));
-document.getElementById('btnReset').addEventListener('click',()=>{
-  if(value===0) return;
-  const oldV=value; value=0; dCur=dur(); setDur(dCur);
-  rollOdometer(oldV,0); setDigits(); updateGuards();
-  rebuildFromValue(0,true);
-});
-for(let p=0;p<4;p++){
-  plusBtns[p].addEventListener('click',()=>placeAction(p,1));
-  minusBtns[p].addEventListener('click',()=>placeAction(p,-1));
-}
-
-// Tastenkürzel: ↑ +1 · ↓ −1 · 1/2/3/4 erhöhen · q/w/e/r verringern
-// Gedrückthalten → fortlaufendes Zählen (eigene Wiederholung, nicht OS-Repeat).
-const minusBig=document.getElementById('btnMinus');
-function tapBtn(btn){ if(!btn||btn.disabled) return; btn.classList.add('kp'); setTimeout(()=>btn.classList.remove('kp'),120); }
-function pressBig(){ if(value>=9999) return; big.classList.add('press'); setTimeout(()=>big.classList.remove('press'),110); }
-const KEYPLACE={ '1':3, '2':2, '3':1, '4':0 };   // Ziffertaste → +Stellenwert
-const KEYMINUS={ 'q':3, 'w':2, 'e':1, 'r':0 };   // q·w·e·r → −Stellenwert (über 1·2·3·4)
 const REPEAT_DELAY=300, REPEAT_EVERY=85;
-
-function runKey(k){
-  // führt die Aktion aus; gibt true zurück, wenn sich der Wert geändert hat
-  const before=value;
-  if(k==='ArrowUp'){ pressBig(); act(1); }
-  else if(k==='ArrowDown'){ tapBtn(minusBig); act(-1); }
-  else if(k in KEYPLACE){ const p=KEYPLACE[k]; tapBtn(plusBtns[p]); placeAction(p,1); }
-  else if(k in KEYMINUS){ const p=KEYMINUS[k]; tapBtn(minusBtns[p]); placeAction(p,-1); }
-  else return null;        // keine zuständige Taste
-  return value!==before;
+let repTok=null, repKey=null;
+function stopRepeat(){ if(repTok){ clearTimeout(repTok.delay); clearInterval(repTok.iv); repTok=null; } }
+function startRepeat(step){
+  stopRepeat();
+  if(step()===false) return;        // erste Aktion; ohne Änderung nicht wiederholen
+  const t={};
+  t.delay=setTimeout(()=>{ t.iv=setInterval(()=>{ if(step()===false) stopRepeat(); }, REPEAT_EVERY); }, REPEAT_DELAY);
+  repTok=t;
 }
-let repeatKey=null, repDelay=null, repTimer=null;
-function stopRepeat(){ clearTimeout(repDelay); clearInterval(repTimer); repeatKey=null; repDelay=null; repTimer=null; }
-function normKey(e){ return e.key.length===1 ? e.key.toLowerCase() : e.key; }
+function bindHold(btn, step){
+  btn.addEventListener('pointerdown',e=>{ if(e.button&&e.button!==0) return; e.preventDefault();
+    repKey=null; try{btn.setPointerCapture(e.pointerId);}catch(_){} startRepeat(step); });
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>btn.addEventListener(ev, stopRepeat));
+}
 
+/* =========================================================================
+   11. UI aufbauen (parametrisch für N Stellen)
+   ========================================================================= */
+const colsEl=document.getElementById('cols');
+const odEl=document.getElementById('odometer');
+const subEl=document.getElementById('sub');
+const hintEl=document.getElementById('hint');
+const big=document.getElementById('btnPlus');
+const minusBig=document.getElementById('btnMinus');
+let frames=[], digitEls=[], plusBtns=[], minusBtns=[], badgeEls=[], wheels=[];
+let KEYINC={}, KEYDEC={};
+const INC_KEYS=['1','2','3','4','5'], DEC_KEYS=['q','w','e','r','t'];
+
+function buildBoard(n){
+  N=n; MAX=pow10(N)-1;
+  colsEl.style.gridTemplateColumns=`repeat(${N},1fr)`;
+  colsEl.innerHTML=''; odEl.innerHTML='';
+  frames=[]; digitEls=[]; plusBtns=[]; minusBtns=[]; badgeEls=[]; wheels=[];
+  KEYINC={}; KEYDEC={};
+  odEl.className='odometer'+(N>=5?' n5':'');
+
+  const order=[]; for(let p=N-1;p>=0;p--) order.push(p);   // höchste Stelle links
+  order.forEach((p,idx)=>{
+    const c=COLORS[p];
+    const col=document.createElement('div'); col.className='col'; col.dataset.p=p;
+    col.innerHTML=
+      `<div class="col-head"><div class="name">${MASTER[p].name}</div><div class="digit">0</div></div>
+       <div class="frame"><div class="badge">🔁 +1</div></div>
+       <div class="col-foot">
+         <button class="pbtn minus" aria-label="${MASTER[p].name} minus">−</button>
+         <button class="pbtn plus"  aria-label="${MASTER[p].name} plus">+</button>
+       </div>`;
+    colsEl.appendChild(col);
+    const fr=col.querySelector('.frame'), dg=col.querySelector('.digit'), bd=col.querySelector('.badge');
+    const minus=col.querySelector('.pbtn.minus'), plus=col.querySelector('.pbtn.plus');
+    fr.style.setProperty('--flashc',c.s); bd.style.setProperty('--flashc',c.s);
+    dg.style.color=c.s; col.querySelector('.name').style.color=c.s;
+    plus.style.background=`linear-gradient(180deg,${c.t},${c.d})`;
+    frames[p]=fr; digitEls[p]=dg; badgeEls[p]=bd; minusBtns[p]=minus; plusBtns[p]=plus;
+    bindHold(plus, ()=>placeChanged(p,1));
+    bindHold(minus, ()=>placeChanged(p,-1));
+    // Tastenzuordnung (links→rechts = höchste→niedrigste Stelle)
+    KEYINC[INC_KEYS[idx]]=p; KEYDEC[DEC_KEYS[idx]]=p;
+
+    const w=document.createElement('div'); w.className='wheel';
+    const strip=document.createElement('div'); strip.className='strip';
+    [9,0,1,2,3,4,5,6,7,8,9,0].forEach(nn=>{ const s=document.createElement('span'); s.textContent=nn; s.style.color=c.s; strip.appendChild(s); });
+    w.appendChild(strip); odEl.appendChild(w);
+    wheels[p]={el:w, strip, idx:1};
+  });
+
+  // Untertitel + Hinweis
+  const names=order.map(p=>MASTER[p].name).join(' · ');
+  subEl.textContent=`${names} — von 0 bis ${MAX}`;
+  const inc=INC_KEYS.slice(0,N).join('·'), dec=DEC_KEYS.slice(0,N).join('·');
+  hintEl.innerHTML=`Klicker drücken oder unter einer Spalte +/− tippen (halten zum Zählen).<br>`+
+    `Tastatur: ↑ +1 · ↓ −1 · ${inc} erhöhen · ${dec} verringern — Taste halten zum Zählen.`;
+
+  document.querySelectorAll('.places button').forEach(b=>b.classList.toggle('active', +b.dataset.n===N));
+}
+
+function setPlaces(n){
+  if(n===N) return;
+  stopRepeat();
+  buildBoard(n);
+  value=0; rebuildFromValue(0); setDigits(); updateGuards();
+  wheels.forEach(w=>{ const h=w.el.clientHeight; w.strip.style.transition='none'; w.strip.style.transform=`translateY(${-w.idx*h}px)`; });
+}
+
+/* =========================================================================
+   12. Verdrahtung
+   ========================================================================= */
+function pressBig(){ if(value>=MAX) return; big.classList.add('press'); setTimeout(()=>big.classList.remove('press'),110); }
+function tapBtn(btn){ if(!btn||btn.disabled) return; btn.classList.add('kp'); setTimeout(()=>btn.classList.remove('kp'),120); }
+
+bindHold(big, ()=>{ pressBig(); return placeChanged(0,1); });
+bindHold(minusBig, ()=>placeChanged(0,-1));
+document.getElementById('btnReset').addEventListener('click', doReset);
+document.querySelectorAll('.places button').forEach(b=>b.addEventListener('click',()=>setPlaces(+b.dataset.n)));
+
+// Tastatur (mit eigener Wiederholung beim Halten)
+function normKey(e){ return e.key.length===1 ? e.key.toLowerCase() : e.key; }
+function runKey(k){
+  if(k==='ArrowUp'){ pressBig(); placeAction(0,1); }
+  else if(k==='ArrowDown'){ tapBtn(minusBig); placeAction(0,-1); }
+  else if(k in KEYINC){ const p=KEYINC[k]; tapBtn(plusBtns[p]); placeAction(p,1); }
+  else if(k in KEYDEC){ const p=KEYDEC[k]; tapBtn(minusBtns[p]); placeAction(p,-1); }
+}
+function runKeyChanged(k){ const b=value; runKey(k); return value!==b; }
 window.addEventListener('keydown',e=>{
   if(e.metaKey||e.ctrlKey||e.altKey) return;
   const tag=(e.target&&e.target.tagName)||''; if(tag==='INPUT'||tag==='TEXTAREA') return;
   const k=normKey(e);
-  const isOurs = k==='ArrowUp'||k==='ArrowDown'||k in KEYPLACE||k in KEYMINUS;
-  if(!isOurs) return;
+  if(!(k==='ArrowUp'||k==='ArrowDown'||k in KEYINC||k in KEYDEC)) return;
   e.preventDefault();
-  if(e.repeat) return;            // OS-Repeat ignorieren, wir wiederholen selbst
-  if(repeatKey===k) return;
-  stopRepeat();
-  if(runKey(k)===null) return;
-  repeatKey=k;
-  repDelay=setTimeout(()=>{
-    repTimer=setInterval(()=>{
-      if(repeatKey!==k){ stopRepeat(); return; }
-      if(runKey(k)===false) stopRepeat();   // an der Grenze (0 / 9999) anhalten
-    }, REPEAT_EVERY);
-  }, REPEAT_DELAY);
+  if(e.repeat || repKey===k) return;
+  repKey=k; startRepeat(()=>runKeyChanged(k));
 });
-window.addEventListener('keyup',e=>{ if(normKey(e)===repeatKey) stopRepeat(); });
-window.addEventListener('blur', stopRepeat);
+window.addEventListener('keyup',e=>{ if(normKey(e)===repKey){ repKey=null; stopRepeat(); } });
+window.addEventListener('blur',()=>{ repKey=null; stopRepeat(); });
 
-// Neu-Layout bei Größen-/Zoom-Änderungen (Fenster, Pinch-Zoom, Reflow)
+// Neu-Layout bei Größen-/Zoom-/Reflow-Änderungen
 let rT;
 function relayout(){ clearTimeout(rT); rT=setTimeout(()=>{ refreshRects(); layout(true); },80); }
 window.addEventListener('resize', relayout);
 window.addEventListener('orientationchange',()=>setTimeout(()=>{refreshRects();layout(true);},300));
-if(window.visualViewport){
-  visualViewport.addEventListener('resize', relayout);
-  visualViewport.addEventListener('scroll', relayout);
-}
-if(window.ResizeObserver){
-  new ResizeObserver(relayout).observe(blocksEl);
-}
+if(window.visualViewport){ visualViewport.addEventListener('resize',relayout); visualViewport.addEventListener('scroll',relayout); }
+if(window.ResizeObserver){ new ResizeObserver(relayout).observe(blocksEl); }
 
 /* =========================================================================
-   10. Start
+   13. Start
    ========================================================================= */
 function start(){
-  refreshRects();
-  rebuildFromValue(0,true);
-  setDigits(); updateGuards();
-  // Räder initialisieren
+  buildBoard(4);
+  refreshRects(); rebuildFromValue(0); setDigits(); updateGuards();
   wheels.forEach(w=>{ const h=w.el.clientHeight; w.strip.style.transition='none'; w.strip.style.transform=`translateY(${-w.idx*h}px)`; });
 }
 if(document.readyState==='complete'||document.readyState==='interactive') setTimeout(start,30);
