@@ -8,8 +8,8 @@ zwei verknüpften Darstellungen derselben Zahl. Wählbar **3, 4 oder 5 Stellen**
    großem **+1**-Druckknopf, **−1** und Reset.
 2. **Dienes-/Mehrsystemblöcke** in einer Stellenwerttabelle in isometrischer 3D-Optik.
    Echte, massive Mehrsystemblöcke: Einer = Würfel · Zehner = Stange · Hunderter = Platte ·
-   Tausender = Würfel · Zehntausender = Turm aus 10 Tausendern. Gitterlinien zeigen die
-   10er-Unterteilung, sodass alles zählbar bleibt.
+   Tausender = Würfel · Zehntausender = Turm aus 10 Tausendern. Solide Formen ohne
+   Unterteilungslinien; zählbar bleiben sie durch die Lücken zwischen den Blöcken.
 
 Beide Ansichten sind **immer synchron und bidirektional**: Die Zahl ist die einzige Quelle
 der Wahrheit. Bündeln/Entbündeln (Übertrag und Borgen) wird sichtbar gemacht – zehn Blöcke

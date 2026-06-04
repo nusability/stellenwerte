@@ -271,12 +271,14 @@ h1,h2,p{margin:0;}
    einer Stelle in ihrer Spalte; extend = Achse, entlang der 10 Blöcke der
    nächstkleineren Stelle den Block dieser Stelle bilden.
    ========================================================================= */
+// Echte, massive Mehrsystemblöcke — solide Stangen/Platten/Würfel ohne
+// Unterteilungslinien. Zählbar bleiben sie durch die Lücken ZWISCHEN den Blöcken.
 const MASTER = [
   {name:'Einer',         w:1,  h:1,   d:1,  grid:false, step:1,  rest:'x', extend:null, gap:0.0, label:'E'},
-  {name:'Zehner',        w:10, h:1,   d:1,  grid:true,  step:1,  rest:'z', extend:'x',  gap:0.42, label:'Z'},
-  {name:'Hunderter',     w:10, h:1,   d:10, grid:true,  step:1,  rest:'y', extend:'z',  gap:0.55, label:'H'},
-  {name:'Tausender',     w:10, h:10,  d:10, grid:true,  step:1,  rest:'y', extend:'y',  gap:1.6,  label:'T'},
-  {name:'Zehntausender', w:10, h:100, d:10, grid:true,  step:10, rest:'x', extend:'y',  gap:3.0,  label:'ZT'},
+  {name:'Zehner',        w:10, h:1,   d:1,  grid:false, step:1,  rest:'z', extend:'x',  gap:0.42, label:'Z'},
+  {name:'Hunderter',     w:10, h:1,   d:10, grid:false, step:1,  rest:'y', extend:'z',  gap:0.55, label:'H'},
+  {name:'Tausender',     w:10, h:10,  d:10, grid:false, step:1,  rest:'y', extend:'y',  gap:1.6,  label:'T'},
+  {name:'Zehntausender', w:10, h:100, d:10, grid:false, step:10, rest:'x', extend:'y',  gap:3.0,  label:'ZT'},
 ];
 const COLORS = [
   {s:'#34c759', t:'#7DEB9A', f:'#34c759', d:'#1f8f41'}, // Einer  – grün
@@ -359,11 +361,16 @@ function restPose(p, i){
   else                  ly = -(i*(D.h+gap) + D.h/2);   // 'y' = nach oben gestapelt
   return {lx,ly,lz};
 }
-// 10 Tile-Posen: wie 10 Blöcke der Stelle p-1 den p-Block am Slot füllen
+// 10 Tile-Posen: wie 10 Blöcke der Stelle p-1 den p-Block am Slot füllen.
+// Die Quellblöcke liegen bereits entlang DERSELBEN Achse, in die sie kacheln
+// (Ruhe-Achse = Bündel-Achse). Damit die Reihenfolge erhalten bleibt (kein
+// Kippen/Spiegeln), muss die Tile-Richtung der Quellrichtung folgen:
+// rest 'x' wächst (+i), rest 'z'/'y' fallen (-i) → dort Vorzeichen drehen.
 function tilePoses(p, slot){
   const c=restPose(p,slot), sub=dim(p-1), ax=MASTER[p].extend, res=[];
   for(let k=0;k<10;k++){
-    const off=k-4.5; let lx=c.lx, ly=c.ly, lz=c.lz;
+    const off = (ax==='x') ? (k-4.5) : (4.5-k);
+    let lx=c.lx, ly=c.ly, lz=c.lz;
     if(ax==='x')      lx += off*sub.w;
     else if(ax==='z') lz += off*sub.d;
     else              ly += off*sub.h;
