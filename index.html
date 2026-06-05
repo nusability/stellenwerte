@@ -456,20 +456,23 @@ function applyPose(b, ox,oy,s, pose, instant){
 }
 function layout(instant){
   refreshRects();
-  let anyMoved=false, anyBorn=false;
+  let anyMoved=false; const borns=[];
   for(let p=0;p<N;p++){
     const items=gatherColumn(p);
     const ct=columnTransform(p,items);
     for(const [b,pose] of items){
       if(!b.born){
         b.born=true; b.el.style.opacity='0';
-        applyPose(b,ct.ox,ct.oy,ct.s,pose,true);
-        if(!instant){ b.el.style.zIndex=Z_TRANSIT+(b._zRest-Z_BASE); anyBorn=true; }
+        applyPose(b,ct.ox,ct.oy,ct.s,pose,true);   // setzt sofort das echte Tiefen-z
+        if(!instant) borns.push(b);
         requestAnimationFrame(()=>{ b.el.style.opacity='1'; });
       } else if(applyPose(b,ct.ox,ct.oy,ct.s,pose,instant)) anyMoved=true;
     }
   }
-  if(anyMoved||anyBorn) scheduleZSettle();
+  // Neue Blöcke nur dann in die Transit-Ebene heben, wenn sich Nachbarn bewegen
+  // (sonst würden sie dahinter rendern). Bewegt sich nichts — z. B. ein einzelner,
+  // verstreuter Einer — behalten sie ihr echtes Tiefen-z und verdecken korrekt.
+  if(anyMoved){ borns.forEach(b=>{ b.el.style.zIndex=Z_TRANSIT+(b._zRest-Z_BASE); }); scheduleZSettle(); }
 }
 
 /* =========================================================================
