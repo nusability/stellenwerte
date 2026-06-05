@@ -271,14 +271,16 @@ h1,h2,p{margin:0;}
    einer Stelle in ihrer Spalte; extend = Achse, entlang der 10 Blöcke der
    nächstkleineren Stelle den Block dieser Stelle bilden.
    ========================================================================= */
-// Echte, massive Mehrsystemblöcke — solide Stangen/Platten/Würfel ohne
-// Unterteilungslinien. Zählbar bleiben sie durch die Lücken ZWISCHEN den Blöcken.
+// Echte Mehrsystemblöcke. Stangen/Platten/Würfel tragen Markierungen für jede
+// "1" (10er-Unterteilung). Einer = einzelner Würfel (eine "1", keine Linien) und
+// werden NICHT in einer Reihe (= sähe aus wie eine Stange/Zehn) angeordnet,
+// sondern zufällig auf der Fläche verstreut.
 const MASTER = [
   {name:'Einer',         w:1,  h:1,   d:1,  grid:false, step:1,  rest:'x', extend:null, gap:0.0, label:'E'},
-  {name:'Zehner',        w:10, h:1,   d:1,  grid:false, step:1,  rest:'z', extend:'x',  gap:0.42, label:'Z'},
-  {name:'Hunderter',     w:10, h:1,   d:10, grid:false, step:1,  rest:'y', extend:'z',  gap:0.55, label:'H'},
-  {name:'Tausender',     w:10, h:10,  d:10, grid:false, step:1,  rest:'y', extend:'y',  gap:1.6,  label:'T'},
-  {name:'Zehntausender', w:10, h:100, d:10, grid:false, step:10, rest:'x', extend:'y',  gap:3.0,  label:'ZT'},
+  {name:'Zehner',        w:10, h:1,   d:1,  grid:true,  step:1,  rest:'z', extend:'x',  gap:0.42, label:'Z'},
+  {name:'Hunderter',     w:10, h:1,   d:10, grid:true,  step:1,  rest:'y', extend:'z',  gap:0.55, label:'H'},
+  {name:'Tausender',     w:10, h:10,  d:10, grid:true,  step:1,  rest:'y', extend:'y',  gap:1.6,  label:'T'},
+  {name:'Zehntausender', w:10, h:100, d:10, grid:true,  step:10, rest:'x', extend:'y',  gap:3.0,  label:'ZT'},
 ];
 const COLORS = [
   {s:'#34c759', t:'#7DEB9A', f:'#34c759', d:'#1f8f41'}, // Einer  – grün
@@ -324,12 +326,26 @@ function makeBox(w,h,d,grid,stepPx){     // Maße in px
   return box;
 }
 function dim(p){ const m=MASTER[p]; return {w:m.w, h:m.h, d:m.d}; }
+
+// Einer werden zufällig auf einer festen Bodenfläche verstreut (nie in Reihe).
+const SCAT_X=2.6, SCAT_Z=2.6, SCAT_MIN=1.2;
+function scatterPos(){
+  const others=(M[0]||[]).map(b=>b._scatter).filter(Boolean);
+  let best=null;
+  for(let t=0;t<60;t++){
+    const lx=(Math.random()*2-1)*SCAT_X, lz=(Math.random()*2-1)*SCAT_Z;
+    if(others.every(o=>Math.hypot(o.lx-lx,o.lz-lz)>SCAT_MIN)) return {lx,lz};
+    best={lx,lz};
+  }
+  return best;
+}
 function newBlock(p){
   const m=MASTER[p];
   const el=document.createElement('div'); el.className='block'+(p===0?' cube':'');
   el.appendChild(makeBox(m.w*U, m.h*U, m.d*U, m.grid, m.step*U));
   blocksEl.appendChild(el);
   const b={id:++_id, place:p, el, dim:dim(p), born:false};
+  if(p===0) b._scatter=scatterPos();
   setColor(b,p);
   allBlocks.add(b);
   return b;
@@ -378,9 +394,13 @@ function tilePoses(p, slot){
   }
   return res;
 }
+function poseFor(b, p, i){
+  if(p===0){ const s=b._scatter||{lx:0,lz:0}; return {lx:s.lx, ly:-0.5, lz:s.lz}; }
+  return restPose(p,i);
+}
 function gatherColumn(p){
   const arr=[];
-  (M[p]||[]).forEach((b,i)=>arr.push([b, restPose(p,i)]));
+  (M[p]||[]).forEach((b,i)=>arr.push([b, poseFor(b,p,i)]));
   flying.forEach(f=>{ if(f.place===p) arr.push([f.b,{lx:f.lx,ly:f.ly,lz:f.lz}]); });
   return arr;
 }
@@ -395,14 +415,19 @@ const Z_BASE=1000, Z_TRANSIT=100000;
 function columnTransform(p, items){
   const fr = frames[p].getBoundingClientRect();
   const fw=fr.width, fh=fr.height, padX=10, padY=12;
-  if(items.length===0) return {ox:fr.left-sceneRect.left+fw/2, oy:fr.top-sceneRect.top+fh-padY, s:0.6};
   let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
-  for(const [b,pose] of items){
-    const d=b.dim;
-    for(let sx=-1;sx<=1;sx+=2)for(let sy=-1;sy<=1;sy+=2)for(let sz=-1;sz<=1;sz+=2){
-      const q=proj(pose.lx+sx*d.w/2, pose.ly+sy*d.h/2, pose.lz+sz*d.d/2);
-      if(q.x<minX)minX=q.x; if(q.x>maxX)maxX=q.x;
-      if(q.y<minY)minY=q.y; if(q.y>maxY)maxY=q.y;
+  const acc=(lx,ly,lz)=>{ const q=proj(lx,ly,lz);
+    if(q.x<minX)minX=q.x; if(q.x>maxX)maxX=q.x; if(q.y<minY)minY=q.y; if(q.y>maxY)maxY=q.y; };
+  if(p===0){
+    // feste Bodenfläche → Einer-Würfel bleiben gleich groß, egal wie viele
+    const ex=SCAT_X+0.6, ez=SCAT_Z+0.6;
+    for(let sx=-1;sx<=1;sx+=2)for(let sz=-1;sz<=1;sz+=2){ acc(sx*ex,0,sz*ez); acc(sx*ex,-1,sz*ez); }
+  } else {
+    if(items.length===0) return {ox:fr.left-sceneRect.left+fw/2, oy:fr.top-sceneRect.top+fh-padY, s:0.6};
+    for(const [b,pose] of items){
+      const d=b.dim;
+      for(let sx=-1;sx<=1;sx+=2)for(let sy=-1;sy<=1;sy+=2)for(let sz=-1;sz<=1;sz+=2)
+        acc(pose.lx+sx*d.w/2, pose.ly+sy*d.h/2, pose.lz+sz*d.d/2);
     }
   }
   const cw=Math.max(1,maxX-minX), ch=Math.max(1,maxY-minY);

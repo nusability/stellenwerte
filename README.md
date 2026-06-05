@@ -7,9 +7,10 @@ zwei verknüpften Darstellungen derselben Zahl. Wählbar **3, 4 oder 5 Stellen**
 1. **Tally-Counter** – ein Handklicker mit mechanischem Odometer (rollende Ziffernräder),
    großem **+1**-Druckknopf, **−1** und Reset.
 2. **Dienes-/Mehrsystemblöcke** in einer Stellenwerttabelle in isometrischer 3D-Optik.
-   Echte, massive Mehrsystemblöcke: Einer = Würfel · Zehner = Stange · Hunderter = Platte ·
-   Tausender = Würfel · Zehntausender = Turm aus 10 Tausendern. Solide Formen ohne
-   Unterteilungslinien; zählbar bleiben sie durch die Lücken zwischen den Blöcken.
+   Echte Mehrsystemblöcke: Einer = Würfel · Zehner = Stange · Hunderter = Platte ·
+   Tausender = Würfel · Zehntausender = Turm aus 10 Tausendern. Stangen, Platten und
+   Würfel tragen Markierungen für jede „1". Die Einer liegen lose verstreut (nie in
+   einer Reihe – eine Stange bedeutet immer genau Zehn).
 
 Beide Ansichten sind **immer synchron und bidirektional**: Die Zahl ist die einzige Quelle
 der Wahrheit. Bündeln/Entbündeln (Übertrag und Borgen) wird sichtbar gemacht – zehn Blöcke
