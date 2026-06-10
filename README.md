@@ -1,8 +1,8 @@
 # Stellenwerte · Mehrsystemblöcke
 
 Eine mobile-first Web-App zum Lernen des **Stellenwertsystems** (Basis 10) mit
-zwei verknüpften Darstellungen derselben Zahl. Wählbar **3, 4 oder 5 Stellen**
-(bis 999, 9999 oder 99999):
+zwei verknüpften Darstellungen derselben Zahl. Wählbar **2, 3, 4 oder 5 Stellen**
+(bis 99, 999, 9999 oder 99999; Standard: 2):
 
 1. **Tally-Counter** – ein Handklicker mit mechanischem Odometer (rollende Ziffernräder),
    großem **+1**-Druckknopf, **−1** und Reset.
@@ -22,7 +22,7 @@ einer Stelle wandern zusammen, fügen sich zur Form der nächsten Stelle und **v
 - **Klicker** drücken oder unter einer Spalte **+/−** tippen — gedrückt halten zum fortlaufenden Zählen.
 - **Tastatur:** `↑` +1 · `↓` −1 · Zifferntasten erhöhen, `q w e r t` verringern
   (von der höchsten zur niedrigsten Stelle) — Taste halten zum Zählen.
-- **Stellen:** oben 3, 4 oder 5 wählen.
+- **Stellen:** oben 2, 3, 4 oder 5 wählen.
 
 ## Technik
 

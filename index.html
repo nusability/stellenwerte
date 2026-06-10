@@ -239,7 +239,7 @@ h1,h2,p{margin:0;}
     <div class="sub" id="sub"></div>
     <div class="places" id="placesCtl">
       <span class="plabel">Stellen:</span>
-      <button data-n="3">3</button><button data-n="4">4</button><button data-n="5">5</button>
+      <button data-n="2">2</button><button data-n="3">3</button><button data-n="4">4</button><button data-n="5">5</button>
     </div>
   </header>
 
@@ -293,8 +293,8 @@ const U = 22;            // Kantenlänge eines Einer-Würfels (px)
 const MAXSCALE = 1.0;
 const reduced = matchMedia('(prefers-reduced-motion:reduce)').matches;
 
-let N = 4;               // Anzahl der Stellen (3/4/5)
-let MAX = 9999;          // 10^N - 1
+let N = 2;               // Anzahl der Stellen (2/3/4/5), Standard: 2
+let MAX = 99;            // 10^N - 1
 function pow10(p){ return Math.round(Math.pow(10,p)); }
 
 /* Isometrische, orthographische Projektion (rotateX(-26) rotateY(-34)) */
@@ -767,7 +767,7 @@ if(window.ResizeObserver){ new ResizeObserver(relayout).observe(blocksEl); }
    13. Start
    ========================================================================= */
 function start(){
-  buildBoard(4);
+  buildBoard(2);
   refreshRects(); rebuildFromValue(0); setDigits(); updateGuards();
   wheels.forEach(w=>{ const h=w.el.clientHeight; w.strip.style.transition='none'; w.strip.style.transform=`translateY(${-w.idx*h}px)`; });
 }
