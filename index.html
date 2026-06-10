@@ -530,7 +530,12 @@ function flashGain(p, label){
 function pushUnit(p){ M[p].push(newBlock(p)); }     // einen massiven Block oben anlegen
 function addAtPlace(p){ pushUnit(p); layout(false); cascadeUp(p); }
 
-function staggerFor(p){ return p===0 ? Math.max(120, dCur*1000*0.42) : dCur*1000 + 70; }
+// Jede Stufe ist jetzt eine vollständige Übergabe (auch Einer→Stange bildet eine
+// MASSIVE Stange per Hand-off). Die nächste Stufe darf erst starten, wenn diese
+// Übergabe komplett abgeschlossen ist (Quellblöcke entfernt, Zielblock sichtbar),
+// sonst greift Stange→Platte die noch entstehende Stange ab und die Einer bleiben
+// verwaist zurück.
+function staggerFor(p){ return dCur*1000 + 70; }
 function cascadeUp(p){
   if(p>N-2 || countAt(p)<10) return;
   bundleUp(p); layout(false);
