@@ -153,8 +153,8 @@ h1,h2,p{margin:0;}
 }
 .term .num .d{ color:var(--c); }
 /* die Nullen sind Platzhalter — sie zeigen den Stellenwert, blasser */
-.term .num .z{ color:var(--c); opacity:.32; font-style:normal; font-weight:800; }
-.term.zero .num{ opacity:.4; }
+.term .num .z{ color:var(--cz); opacity:.85; font-size:.92em; font-style:normal; font-weight:800; }
+.term.zero .num{ opacity:.72; }
 .term .num.bump{ animation:numBump .4s var(--ease); }
 @keyframes numBump{ 0%{transform:scale(1);} 34%{transform:scale(1.17);} 100%{transform:scale(1);} }
 
@@ -678,7 +678,7 @@ function drawWires(){
 function updateWires(){
   for(let p=0;p<N;p++){
     if(!wirePaths[p]) continue;
-    const on=(Math.floor(value/pow10(p))%10)!==0, o=on?'.8':'.2';
+    const on=(Math.floor(value/pow10(p))%10)!==0, o=on?'.8':'.28';
     wirePaths[p].style.opacity=o;
     wireDots[p][0].style.opacity=o; wireDots[p][1].style.opacity=o;
   }
@@ -802,7 +802,7 @@ function buildBoard(n){
     // exakt unter der Spalte, dazwischen die Plus-Zeichen.
     const term=document.createElement('div');
     term.className='term'+(idx===0?' first':'')+' zero';
-    term.style.setProperty('--c',c.s);
+    term.style.setProperty('--c',c.s); term.style.setProperty('--cz',c.t);
     term.innerHTML=`<span class="op">+</span><span class="num"><b class="d">0</b>`+
                    (p?`<i class="z">${'0'.repeat(p)}</i>`:'')+`</span>`;
     sumEl.appendChild(term);
@@ -810,11 +810,11 @@ function buildBoard(n){
 
     // Kabel von diesem Term zu seinem Ziffernrad im Klicker
     const path=document.createElementNS(SVGNS,'path');
-    path.setAttribute('stroke',c.s); path.style.opacity='.2';
+    path.setAttribute('stroke',c.s); path.style.opacity='.28';
     const dot1=document.createElementNS(SVGNS,'circle'), dot2=document.createElementNS(SVGNS,'circle');
     dot1.setAttribute('r','2.6'); dot2.setAttribute('r','2.2');
     dot1.setAttribute('fill',c.s); dot2.setAttribute('fill',c.s);
-    dot1.style.opacity='.2'; dot2.style.opacity='.2';
+    dot1.style.opacity='.28'; dot2.style.opacity='.28';
     wiresEl.appendChild(path); wiresEl.appendChild(dot1); wiresEl.appendChild(dot2);
     wirePaths[p]=path; wireDots[p]=[dot1,dot2];
     bindHold(plus, ()=>placeChanged(p,1));
