@@ -241,6 +241,75 @@ h1,h2,p{margin:0;}
 
 .hint{ text-align:center; font-size:11.5px; color:var(--ink-dim); padding:2px 12px 8px; font-weight:600;}
 
+/* ===========================================================
+   MODUS: Entdecken (frei) · Spielen (Zielzahl legen, dann prüfen)
+   Im Spiel sind Klicker, Summenleiste und Kabel ausgeblendet —
+   sonst könnte man die Zahl einfach ablesen statt sie zu legen.
+   =========================================================== */
+.modes{
+  display:inline-flex; gap:3px; padding:3px; margin-top:7px; border-radius:11px;
+  background:#121927; border:1px solid var(--frame-edge);
+}
+.modes button{
+  height:28px; padding:0 14px; border-radius:8px; border:0; background:transparent;
+  color:var(--ink-dim); font-weight:800; font-size:13px; cursor:pointer;
+  transition:background .15s, color .15s;
+}
+.modes button.active{ background:linear-gradient(180deg,#4a6cff,#2b4fd6); color:#fff; box-shadow:0 2px 8px -2px #2b4fd6aa; }
+
+body.game #sum, body.game #wires, body.game #counter{ display:none; }
+.task, .checkrow{ display:none; }
+body.game .task{ display:grid; }
+body.game .checkrow{ display:flex; }
+
+.task{
+  grid-template-columns:1fr auto; align-items:center; column-gap:12px;
+  padding:9px 16px 8px; border-radius:16px;
+  background:linear-gradient(180deg,#1b2435,#141b27);
+  border:1px solid var(--frame-edge);
+  box-shadow:0 10px 30px -12px #000a, inset 0 1px 0 #ffffff10;
+  transition:border-color .25s, box-shadow .25s;
+}
+.task .tlabel{ font-size:12px; font-weight:800; color:var(--ink-dim); letter-spacing:.3px; text-transform:uppercase; }
+.task .target{
+  font-size:clamp(36px,11vw,54px); font-weight:900; line-height:1.05; letter-spacing:1px;
+  font-variant-numeric:tabular-nums;
+}
+.task .stars{
+  display:flex; align-items:center; gap:5px; padding:6px 11px; border-radius:999px;
+  background:#0c111b; border:1px solid var(--frame-edge);
+  font-size:18px; font-weight:900; font-variant-numeric:tabular-nums;
+}
+.task .stars.pop{ animation:numBump .5s var(--ease); }
+.task .msg{ grid-column:1 / -1; min-height:20px; font-size:14px; font-weight:800; color:var(--ink-dim); }
+.task .msg b{ font-variant-numeric:tabular-nums; }
+.task.ok{ border-color:#3ad07a; box-shadow:0 0 0 2px #3ad07a55, 0 10px 34px -8px #3ad07a88; }
+.task.ok .msg{ color:#5be394; }
+.task.bad{ border-color:#ff6b5a; animation:shake .45s ease; }
+.task.bad .msg{ color:#ffb3a8; }
+@keyframes shake{
+  0%,100%{transform:translateX(0);} 18%{transform:translateX(-9px);} 36%{transform:translateX(8px);}
+  54%{transform:translateX(-6px);} 72%{transform:translateX(4px);}
+}
+
+.checkrow{ justify-content:center; margin:12px 0 4px; }
+.checkbtn{
+  width:100%; max-width:440px; height:58px; border-radius:18px; border:none; cursor:pointer;
+  color:#fff; font-size:21px; font-weight:900; letter-spacing:.4px;
+  background:linear-gradient(180deg,#46d989,#1f9d55);
+  box-shadow:0 7px 0 #146c3a, 0 12px 22px -8px #000a, inset 0 2px 2px #ffffff70;
+  transition:transform .08s ease, box-shadow .08s ease, opacity .2s, filter .2s;
+}
+.checkbtn:active{ transform:translateY(6px); box-shadow:0 1px 0 #146c3a, inset 0 2px 2px #ffffff70; }
+.checkbtn.next{
+  background:linear-gradient(180deg,#5b7cff,#2b4fd6);
+  box-shadow:0 7px 0 #1d3596, 0 12px 22px -8px #000a, inset 0 2px 2px #ffffff70;
+}
+.checkbtn[disabled]{ opacity:.4; filter:grayscale(.5); pointer-events:none; }
+body.locked .col-foot{ opacity:.45; pointer-events:none; }
+
+#fx{ position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:50; }
+
 @media (max-height:720px){
   .frame{ height:clamp(146px,33vh,260px); }
   .sum{ margin-top:5px; padding:6px 0 5px; }
@@ -263,6 +332,9 @@ h1,h2,p{margin:0;}
   <header class="app-head">
     <h1>🔢 Stellenwerte</h1>
     <div class="sub" id="sub"></div>
+    <div class="modes" id="modesCtl" role="group" aria-label="Modus">
+      <button data-m="explore" class="active">Entdecken</button><button data-m="game">🎯 Spielen</button>
+    </div>
     <div class="places" id="placesCtl">
       <span class="plabel">Stellen:</span>
       <button data-n="2">2</button><button data-n="3">3</button><button data-n="4">4</button><button data-n="5">5</button>
@@ -270,12 +342,21 @@ h1,h2,p{margin:0;}
   </header>
 
   <main class="stage">
+    <section class="task" id="task" aria-live="polite">
+      <div>
+        <div class="tlabel">Lege diese Zahl</div>
+        <div class="target" id="target"></div>
+      </div>
+      <div class="stars" aria-label="Sterne"><span aria-hidden="true">⭐</span><b id="stars">0</b></div>
+      <div class="msg" id="msg"></div>
+    </section>
     <section class="table-wrap">
       <div class="cols" id="cols"></div>
       <div class="sum" id="sum" role="group" aria-label="Die Zahl als Summe ihrer Stellenwerte"></div>
       <canvas id="blocks"></canvas>
     </section>
     <svg id="wires" aria-hidden="true"></svg>
+    <div class="checkrow"><button class="checkbtn" id="btnCheck">✓ Prüfen</button></div>
 
     <section class="counter" id="counter">
       <div class="left">
@@ -292,6 +373,7 @@ h1,h2,p{margin:0;}
     </section>
     <p class="hint" id="hint"></p>
   </main>
+  <canvas id="fx" aria-hidden="true"></canvas>
 
 <script>
 "use strict";
@@ -513,10 +595,11 @@ function drawScene(){
   ctx.setTransform(_dpr,0,0,_dpr,0,0);
   ctx.clearRect(0,0,sceneRect.width,sceneRect.height);
   ctx.lineJoin='round';
+  const now=performance.now();
   const list=[...allBlocks].filter(b=>!b.dead && b._x!=null && b._op>0.01).sort((a,b)=>a._z-b._z);
   for(const b of list){
     ctx.globalAlpha=Math.min(1,b._op);
-    const col=_faceColors(b), s=b._s, ox=b._x, oy=b._y;
+    const col=_faceColors(b), s=b._s, ox=b._x, oy=b._y+_hopY(b,now);
     const trace=pts=>{ ctx.beginPath(); ctx.moveTo(ox+s*pts[0].x, oy+s*pts[0].y);
       for(let i=1;i<4;i++) ctx.lineTo(ox+s*pts[i].x, oy+s*pts[i].y); ctx.closePath(); };
     for(const f of b.faces){
@@ -535,6 +618,11 @@ function drawScene(){
   }
   ctx.globalAlpha=1;
 }
+// Jubel-Hüpfer (Spiel): reiner Zeichen-Versatz nach oben, Pose bleibt unberührt.
+const HOP_MS=440;
+function _hopY(b,now){ if(!b._hopT0) return 0; const t=(now-b._hopT0)/HOP_MS;
+  return (t<=0||t>=1) ? 0 : -Math.sin(Math.PI*t)*20*b._s; }
+function hop(b, delayMs){ if(reduced) return; b._hopT0=performance.now()+delayMs; startAnim(); }
 let animRAF=null, _drawPending=false;
 function animTick(){
   const now=performance.now(); let any=false;
@@ -545,6 +633,7 @@ function animTick(){
     if(b._opDur>0){ let t=(now-b._opT0)/b._opDur, done=t>=1; if(done)t=1;
       b._op=b._opFrom+(b._opTo-b._opFrom)*t; if(done){ b._op=b._opTo; b._opDur=0; } else any=true; }
     if(b._colDur>0){ if(now-b._colT0>=b._colDur){ b.col=b._colTo; b._colDur=0; } else any=true; }
+    if(b._hopT0){ if(now-b._hopT0>=HOP_MS) b._hopT0=0; else any=true; }
   });
   drawScene();
   animRAF = any ? requestAnimationFrame(animTick) : null;
@@ -625,9 +714,9 @@ function emanate(b, src){     // frischen Block sofort an Quell-Pose setzen (Auf
 /* =========================================================================
    6. Bündeln / Entbündeln — einheitliche Übergabe (Verschmelzen)
    ========================================================================= */
-function flashGain(p, label){
+function flashGain(p, label, icon){
   const f=frames[p]; f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');
-  const bd=badgeEls[p]; bd.textContent='🔁 '+label;
+  const bd=badgeEls[p]; bd.textContent=(icon==null?'🔁 ':icon)+label;
   bd.classList.remove('show'); void bd.offsetWidth; bd.classList.add('show');
 }
 
@@ -752,6 +841,7 @@ function rollOdometer(oldV,newV){
   }
 }
 function updateGuards(){
+  if(game) updateCheck();
   document.getElementById('btnPlus').disabled  = value>=MAX;
   document.getElementById('btnMinus').disabled = value<=0;
   document.getElementById('btnReset').disabled = value===0;
@@ -767,7 +857,7 @@ function updateGuards(){
    ========================================================================= */
 function placeAction(p, d){
   const mag=pow10(p), oldV=value, newV=value+d*mag;
-  if(newV<0||newV>MAX) return;
+  if(newV<0||newV>MAX||locked) return;
   // Plus-Aktionen komponieren mit laufenden Kaskaden (cascadeUp prüft die
   // Anzahl erst beim Feuern) — nur Rückwärts braucht einen festen Endzustand,
   // sonst würde jeder Tipp/Halten die Bündel-Animation sofort abwürgen.
@@ -887,20 +977,143 @@ function buildBoard(n){
   // Untertitel + Hinweis
   const names=order.map(p=>MASTER[p].name).join(' · ');
   subEl.textContent=`${names} — von 0 bis ${MAX}`;
-  const inc=INC_KEYS.slice(0,N).join('·'), dec=DEC_KEYS.slice(0,N).join('·');
-  hintEl.innerHTML=`Klicker drücken oder unter einer Spalte +/− tippen (halten zum Zählen).<br>`+
-    `Tastatur: ↑ +1 · ↓ −1 · ${inc} erhöhen · ${dec} verringern — Taste halten zum Zählen.`;
+  setHint();
 
   document.querySelectorAll('.places button').forEach(b=>b.classList.toggle('active', +b.dataset.n===N));
 }
 
-function setPlaces(n){
-  if(n===N) return;
-  stopRepeat();
+function setHint(){
+  const inc=INC_KEYS.slice(0,N).join('·'), dec=DEC_KEYS.slice(0,N).join('·');
+  hintEl.innerHTML = game
+    ? `Lege die Zahl mit +/− unter den Spalten (halten zum Zählen), dann „Prüfen“.<br>`+
+      `Tastatur: ${inc} erhöhen · ${dec} verringern · Enter prüfen.`
+    : `Klicker drücken oder unter einer Spalte +/− tippen (halten zum Zählen).<br>`+
+      `Tastatur: ↑ +1 · ↓ −1 · ${inc} erhöhen · ${dec} verringern — Taste halten zum Zählen.`;
+}
+// Brett neu aufbauen und auf 0 setzen (Stellenwechsel, Moduswechsel)
+function freshBoard(n){
+  stopRepeat(); clearGameTimers(); setLocked(false);
   buildBoard(n);
   value=0; rebuildFromValue(0); setDigits(); updateGuards();
   wheels.forEach(w=>{ const h=w.el.clientHeight; w.strip.style.transition='none'; w.strip.style.transform=`translateY(${-w.idx*h}px)`; });
   drawWires(); requestAnimationFrame(drawWires);
+  if(game) newRound(true);
+}
+function setPlaces(n){ if(n!==N) freshBoard(n); }
+
+/* =========================================================================
+   11b. Spiel — Zielzahl legen, „Prüfen“
+   Richtig → Jubel (Konfetti, Spalten-Welle, Blöcke hüpfen) + Stern, dann
+   „Nächste Zahl“. Falsch → zeigen, was gelegt wurde, Blöcke zurücksetzen,
+   dieselbe Zahl nochmal. Klicker/Summe sind im Spiel ausgeblendet (CSS).
+   ========================================================================= */
+let game=false, locked=false, target=0, stars=0, phase='build';   // build | done
+let gameTimers=[];
+const taskEl=document.getElementById('task'), targetEl=document.getElementById('target');
+const msgEl=document.getElementById('msg'), starsEl=document.getElementById('stars');
+const checkBtn=document.getElementById('btnCheck');
+function gameLater(fn,ms){ gameTimers.push(setTimeout(fn, reduced?0:ms)); }
+function clearGameTimers(){ gameTimers.forEach(clearTimeout); gameTimers=[]; }
+function setLocked(on){ locked=on; document.body.classList.toggle('locked',on); }
+// Zahl mit Ziffern in Stellenfarbe (ohne führende Nullen)
+function coloredNum(v){
+  const str=String(v);
+  return [...str].map((ch,i)=>`<span style="color:${COLORS[str.length-1-i].s}">${ch}</span>`).join('');
+}
+function updateCheck(){
+  checkBtn.classList.toggle('next', phase==='done');
+  checkBtn.textContent = phase==='done' ? 'Nächste Zahl →' : '✓ Prüfen';
+  checkBtn.disabled = phase==='done' ? false : (locked || value===0);
+}
+function newTarget(){
+  let t; do{ t=1+Math.floor(Math.random()*MAX); } while(t===target && MAX>1);
+  target=t; targetEl.innerHTML=coloredNum(t);
+  targetEl.setAttribute('aria-label', String(t));
+}
+// Blöcke ausblenden, Wert auf 0, dann neu aufbauen (gesperrt bis fertig)
+function clearBlocks(then){
+  stopRepeat(); settle();
+  const oldV=value; value=0; rollOdometer(oldV,0); setDigits(); updateGuards();
+  allBlocks.forEach(b=>setOpacity(b,0,260));
+  gameLater(()=>{ rebuildFromValue(0); if(then) then(); }, 280);
+}
+function newRound(instant){
+  phase='build'; taskEl.classList.remove('ok','bad'); msgEl.textContent='';
+  newTarget();
+  if(instant || value===0){ setLocked(false); updateCheck(); return; }
+  setLocked(true); updateCheck();
+  clearBlocks(()=>{ setLocked(false); updateCheck(); });
+}
+const PRAISE=['Richtig! 🎉','Super! 🎉','Genau! 🎉','Toll gemacht! 🎉','Klasse! 🎉'];
+function check(){
+  if(!game) return;
+  if(phase==='done'){ newRound(false); return; }
+  if(locked || value===0) return;
+  stopRepeat(); settle();
+  setLocked(true);
+  taskEl.classList.remove('ok','bad'); void taskEl.offsetWidth;
+  if(value===target){
+    phase='done'; stars++; starsEl.textContent=stars;
+    const st=starsEl.parentNode; st.classList.remove('pop'); void st.offsetWidth; st.classList.add('pop');
+    taskEl.classList.add('ok');
+    msgEl.textContent=PRAISE[Math.floor(Math.random()*PRAISE.length)];
+    celebrate();
+    updateCheck();
+  } else {
+    taskEl.classList.add('bad');
+    msgEl.innerHTML=`Du hast <b>${coloredNum(value)}</b> gelegt – nicht ganz.`;
+    updateCheck();
+    gameLater(()=>clearBlocks(()=>{
+      taskEl.classList.remove('bad'); msgEl.textContent='Versuch es nochmal!';
+      setLocked(false); updateCheck();
+    }), 2000);
+  }
+}
+function celebrate(){
+  // Spalten-Welle von links nach rechts, Blöcke hüpfen mit
+  const order=[]; for(let p=N-1;p>=0;p--) order.push(p);
+  order.forEach((p,i)=>{
+    gameLater(()=>flashGain(p,'✓',''), i*110);
+    M[p].forEach((b,k)=>hop(b, i*110+k*35));
+  });
+  confetti();
+}
+function setMode(m){
+  const g=(m==='game');
+  if(g===game) return;
+  game=g; document.body.classList.toggle('game',g);
+  document.querySelectorAll('.modes button').forEach(b=>b.classList.toggle('active', (b.dataset.m==='game')===g));
+  if(!g){ taskEl.classList.remove('ok','bad'); fxParts=[]; }   // Konfetti sofort beenden
+  freshBoard(N);   // setzt Wert auf 0 und startet im Spiel eine neue Runde
+  setHint();
+}
+
+/* Konfetti auf einem eigenen Vollbild-Canvas */
+const fxEl=document.getElementById('fx'), fx=fxEl.getContext('2d');
+let fxParts=[], fxRAF=null;
+function confetti(){
+  if(reduced) return;
+  const dpr=Math.min(window.devicePixelRatio||1,2), W=innerWidth, H=innerHeight;
+  fxEl.width=Math.round(W*dpr); fxEl.height=Math.round(H*dpr);
+  const r=taskEl.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height*0.6;
+  const cols=['#ffd23f','#ff5d3a','#3ad07a','#4a8cff','#c46bff','#ffffff'];
+  for(let i=0;i<150;i++){
+    const a=-Math.PI/2+(Math.random()-0.5)*Math.PI*1.25, v=5+Math.random()*9;
+    fxParts.push({x:cx+(Math.random()-0.5)*r.width*0.4, y:cy, vx:Math.cos(a)*v, vy:Math.sin(a)*v-2,
+      w:5+Math.random()*6, h:8+Math.random()*7, rot:Math.random()*6.28, vr:(Math.random()-0.5)*0.35,
+      flip:Math.random()*6.28, vf:0.12+Math.random()*0.18, c:cols[i%cols.length], life:0});
+  }
+  const tick=()=>{
+    fx.setTransform(dpr,0,0,dpr,0,0); fx.clearRect(0,0,W,H);
+    fxParts=fxParts.filter(q=>q.y<H+40 && q.life<260);
+    for(const q of fxParts){
+      q.life++; q.vy+=0.28; q.vx*=0.985; q.vy*=0.985; q.x+=q.vx; q.y+=q.vy; q.rot+=q.vr; q.flip+=q.vf;
+      fx.save(); fx.translate(q.x,q.y); fx.rotate(q.rot); fx.scale(1,Math.cos(q.flip));
+      fx.fillStyle=q.c; fx.fillRect(-q.w/2,-q.h/2,q.w,q.h); fx.restore();
+    }
+    fxRAF = fxParts.length ? requestAnimationFrame(tick) : (fx.clearRect(0,0,W,H), null);
+  };
+  if(fxRAF==null) fxRAF=requestAnimationFrame(tick);
 }
 
 /* =========================================================================
@@ -913,6 +1126,8 @@ bindHold(big, ()=>{ pressBig(); return placeChanged(0,1); });
 bindHold(minusBig, ()=>placeChanged(0,-1));
 document.getElementById('btnReset').addEventListener('click', doReset);
 document.querySelectorAll('.places button').forEach(b=>b.addEventListener('click',()=>setPlaces(+b.dataset.n)));
+document.querySelectorAll('.modes button').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.m)));
+checkBtn.addEventListener('click', check);
 
 // Tastatur (mit eigener Wiederholung beim Halten)
 function normKey(e){ return e.key.length===1 ? e.key.toLowerCase() : e.key; }
@@ -927,6 +1142,7 @@ window.addEventListener('keydown',e=>{
   if(e.metaKey||e.ctrlKey||e.altKey) return;
   const tag=(e.target&&e.target.tagName)||''; if(tag==='INPUT'||tag==='TEXTAREA') return;
   const k=normKey(e);
+  if(k==='Enter' && game){ e.preventDefault(); if(!e.repeat) check(); return; }
   if(!(k==='ArrowUp'||k==='ArrowDown'||k in KEYINC||k in KEYDEC)) return;
   e.preventDefault();
   if(e.repeat || repKey===k) return;
@@ -957,7 +1173,7 @@ if(document.readyState==='complete'||document.readyState==='interactive') setTim
 else window.addEventListener('DOMContentLoaded',start);
 
 // Debug-Zugriff für automatisierte Tests (Blöcke liegen jetzt im Canvas, nicht im DOM).
-window.__dbg={ value:()=>value,
+window.__dbg={ value:()=>value, target:()=>target, stars:()=>stars, locked:()=>locked,
   blocks:()=>[...allBlocks].filter(b=>!b.dead).map(b=>({id:b.id,place:b.place,x:Math.round(b._x),y:Math.round(b._y),s:+(+b._s).toFixed(3),z:Math.round(b._z),op:+(+b._op).toFixed(2),w:b.dim.w})) };
 })();
 </script>

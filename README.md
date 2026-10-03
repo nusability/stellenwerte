@@ -24,6 +24,17 @@ der Wahrheit. Bündeln/Entbündeln (Übertrag und Borgen) wird sichtbar gemacht 
 einer Stelle wandern zusammen, fügen sich zur Form der nächsten Stelle und **verschmelzen**
 (und umgekehrt beim Borgen).
 
+## Spielmodus
+
+Oben zwischen **Entdecken** (freies Erkunden, wie oben beschrieben) und **🎯 Spielen** wechseln.
+Im Spiel erscheint eine **Zielzahl**, die mit den Blöcken gelegt werden soll. Klicker,
+Stellenwert-Summe und Kabel sind dabei ausgeblendet – die Zahl muss gelegt, nicht abgelesen werden.
+
+- **Prüfen** (oder `Enter`): Ist es richtig, gibt es Konfetti, die Spalten leuchten der Reihe
+  nach auf, die Blöcke hüpfen, und es gibt einen ⭐. Weiter geht es mit **Nächste Zahl**.
+- Ist es falsch, wird gezeigt, welche Zahl gelegt wurde. Danach werden die Blöcke
+  zurückgesetzt, und dieselbe Zielzahl bleibt stehen.
+
 ## Bedienung
 
 - **Klicker** drücken oder unter einer Spalte **+/−** tippen — gedrückt halten zum fortlaufenden Zählen.
