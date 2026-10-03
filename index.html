@@ -166,35 +166,12 @@ h1,h2,p{margin:0;}
 /* ===========================================================
    3D-BLÖCKE — isometrisch, orthographisch (kein perspective)
    =========================================================== */
-#blocks{ position:absolute; inset:0; pointer-events:none; z-index:5; }
-.block{
-  position:absolute; left:0; top:0; width:0; height:0; transform-origin:0 0;
-  will-change:transform;
-  transition:transform var(--dur) var(--ease), opacity .25s ease;
-}
-.block .box{
-  position:absolute; left:0; top:0; transform-style:preserve-3d;
-  transform:translate(-50%,-50%) rotateX(-26deg) rotateY(-34deg);
-}
-.face{
-  position:absolute; left:50%; top:50%;
-  background:var(--front); outline:.6px solid #00000028;
-  transition:background var(--dur) ease; backface-visibility:hidden;
-}
-.face.top{ background:var(--top); }
-.face.right{ background:var(--side); }
-.face.front{ background:var(--front); }
-/* Gitterlinien zeigen die 10er-Unterteilung (zählbar) */
-.face.grid{
-  background-image:
-    repeating-linear-gradient(0deg,  #00000033 0 1px, #0000 1px var(--g)),
-    repeating-linear-gradient(90deg, #00000033 0 1px, #0000 1px var(--g));
-  background-color:var(--front);
-}
-.face.grid.top{ background-color:var(--top); }
-.face.grid.right{ background-color:var(--side); }
-.cube .face{ outline:.7px solid #0006; }
-.cube .face.top{ box-shadow:inset 0 0 0 1px #ffffff22; }
+/* Alle Blöcke werden in EIN <canvas> gezeichnet (Maler-Algorithmus, pro Frame).
+   Kein DOM/Compositor-Layer pro Stein → die WebKit-Layer-Desync (ein Stab blieb
+   mit eingefrorenem transform hängen und blendete aus / Verdeckungs-Flackern beim
+   Bündeln) ist strukturell unmöglich; Reihenfolge = nach Tiefe sortiertes Zeichnen.
+   Canvas ist ein „replaced element" → inset:0 streckt es nicht, daher width/height:100%. */
+#blocks{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:5; }
 
 /* ===========================================================
    TALLY-COUNTER (Klicker mit Odometer)
@@ -296,7 +273,7 @@ h1,h2,p{margin:0;}
     <section class="table-wrap">
       <div class="cols" id="cols"></div>
       <div class="sum" id="sum" role="group" aria-label="Die Zahl als Summe ihrer Stellenwerte"></div>
-      <div id="blocks"></div>
+      <canvas id="blocks"></canvas>
     </section>
     <svg id="wires" aria-hidden="true"></svg>
 
@@ -360,24 +337,31 @@ function proj(lx,ly,lz){ return { x:U*(AX.x*lx+AY.x*ly+AZ.x*lz), y:U*(AX.y*lx+AY
    1. Block-Objekte (persistente Identität)
    ========================================================================= */
 const blocksEl = document.getElementById('blocks');
+const ctx = blocksEl.getContext('2d');
 let _id=0;
 const allBlocks=new Set();
 
-function makeBox(w,h,d,grid,stepPx){     // Maße in px
-  const box=document.createElement('div'); box.className='box';
-  box.style.width=w+'px'; box.style.height=h+'px';
-  const g=grid?' grid':'';
-  const mk=(cls,fw,fh,tf)=>{
-    const f=document.createElement('div'); f.className='face '+cls+g;
-    f.style.width=fw+'px'; f.style.height=fh+'px';
-    if(grid) f.style.setProperty('--g', stepPx+'px');
-    f.style.transform='translate(-50%,-50%) '+tf;
-    return f;
-  };
-  box.appendChild(mk('top',   w, d, `rotateX(90deg) translateZ(${h/2}px)`));
-  box.appendChild(mk('front', w, h, `translateZ(${d/2}px)`));
-  box.appendChild(mk('right', d, h, `rotateY(90deg) translateZ(${w/2}px)`));
-  return box;
+/* EIN <canvas> rendert ALLE Blöcke (Maler-Algorithmus, pro Frame neu gezeichnet).
+   Kein DOM-Block, kein Compositor-Layer pro Stein → die WebKit-Layer-Desync
+   (ein Stab blieb mit eingefrorenem transform hängen / Flackern) ist strukturell
+   unmöglich. Reihenfolge = nach Tiefe sortiertes Zeichnen.
+   px-Projektion (ohne U): bildet einen px-Vektor in die Iso-Ebene ab. */
+const PX=(vx,vy,vz)=>({x:AX.x*vx+AY.x*vy+AZ.x*vz, y:AX.y*vx+AY.y*vy+AZ.y*vz});
+function hexRGB(h){ return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]; }
+// Geometrie der drei sichtbaren Flächen (Eckpunkte als px-Offsets vom Anker bei
+// Skala 1) plus optionales Gitter (Ursprung + zwei Kantenvektoren + Zellzahlen).
+function computeFaces(w,h,d,grid,stepPx){   // Maße in px (Einheiten*U)
+  const quad=(a,b,c,e)=>[a,b,c,e];
+  const face=(key,corners,e1,n1,e2,n2,o)=>({key, pts:corners,
+    grid: grid?{o, e1, n1:Math.round(n1), e2, n2:Math.round(n2)}:null});
+  return [
+    face('top', quad(PX(-w/2,-h/2,-d/2),PX(w/2,-h/2,-d/2),PX(w/2,-h/2,d/2),PX(-w/2,-h/2,d/2)),
+         PX(w,0,0), w/stepPx, PX(0,0,d), d/stepPx, PX(-w/2,-h/2,-d/2)),
+    face('side', quad(PX(w/2,-h/2,-d/2),PX(w/2,-h/2,d/2),PX(w/2,h/2,d/2),PX(w/2,h/2,-d/2)),
+         PX(0,0,d), d/stepPx, PX(0,h,0), h/stepPx, PX(w/2,-h/2,-d/2)),
+    face('front', quad(PX(-w/2,-h/2,d/2),PX(w/2,-h/2,d/2),PX(w/2,h/2,d/2),PX(-w/2,h/2,d/2)),
+         PX(w,0,0), w/stepPx, PX(0,h,0), h/stepPx, PX(-w/2,-h/2,d/2)),
+  ];
 }
 function dim(p){ const m=MASTER[p]; return {w:m.w, h:m.h, d:m.d}; }
 
@@ -395,20 +379,24 @@ function scatterPos(){
 }
 function newBlock(p){
   const m=MASTER[p];
-  const el=document.createElement('div'); el.className='block'+(p===0?' cube':'');
-  el.appendChild(makeBox(m.w*U, m.h*U, m.d*U, m.grid, m.step*U));
-  blocksEl.appendChild(el);
-  const b={id:++_id, place:p, el, dim:dim(p), born:false};
+  const b={id:++_id, place:p, dim:dim(p), born:false, cube:(p===0),
+           faces:computeFaces(m.w*U, m.h*U, m.d*U, m.grid, m.step*U),
+           _op:1};                       // Opazität (0..1), in JS animiert
   if(p===0) b._scatter=scatterPos();
-  setColor(b,p);
+  setColor(b,p,true);
   allBlocks.add(b);
   return b;
 }
-function setColor(b, place){
+// Farbe pro Fläche (top/front/side) als RGB. Bei Stellenwechsel (Bündeln) sanft
+// überblenden – instant=true für die Erstfarbe.
+function setColor(b, place, instant){
   b.colorPlace=place; const c=COLORS[place];
-  b.el.style.setProperty('--top',c.t); b.el.style.setProperty('--front',c.f); b.el.style.setProperty('--side',c.d);
+  const to={top:hexRGB(c.t), front:hexRGB(c.f), side:hexRGB(c.d)};
+  if(instant || !b.col){ b.col=to; b._colFrom=null; b._colDur=0; }
+  else { b._colFrom={top:b.col.top.slice(),front:b.col.front.slice(),side:b.col.side.slice()};
+         b._colTo=to; b._colT0=performance.now(); b._colDur=Math.max(1,dCur*1000); startAnim(); }
 }
-function destroy(b){ if(b.el&&b.el.parentNode) b.el.parentNode.removeChild(b.el); b.dead=true; allBlocks.delete(b); }
+function destroy(b){ b.dead=true; allBlocks.delete(b); requestDraw(); }
 
 /* =========================================================================
    2. Modell — M[p] = Liste der (massiven) Blöcke der Stelle p
@@ -462,9 +450,20 @@ function gatherColumn(p){
 /* =========================================================================
    4. Layout — Auto-Fit je Spalte + Transform anwenden
    ========================================================================= */
-let sceneRect=null;
-function refreshRects(){ sceneRect = blocksEl.getBoundingClientRect(); }
-const Z_BASE=1000, Z_TRANSIT=100000;
+let sceneRect=null, _dpr=1;
+function refreshRects(){
+  sceneRect = blocksEl.getBoundingClientRect();
+  _dpr = Math.min(window.devicePixelRatio||1, 2);
+  const w=Math.max(1,Math.round(sceneRect.width*_dpr)), h=Math.max(1,Math.round(sceneRect.height*_dpr));
+  if(blocksEl.width!==w||blocksEl.height!==h){ blocksEl.width=w; blocksEl.height=h; }
+}
+// _z ist der globale Mal-Tiefenwert (Painter-Sortierschlüssel): höher = näher =
+// später gezeichnet = vorn. Jede Spalte bekommt einen Tiefen-Offset (rechts/
+// kleinere Stelle = näher), damit ein fliegender Block stetig von „vorn" (Quell-
+// spalte) nach „hinten" (Zielspalte) sortiert und sich korrekt hinter die Stäbe
+// schiebt. Da pro Frame neu sortiert/gezeichnet wird, ist die Verdeckung exakt.
+const Z_BASE=1000, COL_DEPTH=1000;
+function colZ(p){ return (N-1-p)*COL_DEPTH; }
 
 function columnTransform(p, items){
   const fr = frames[p].getBoundingClientRect();
@@ -490,43 +489,101 @@ function columnTransform(p, items){
   const oy=(fr.top -sceneRect.top )+fh - padY - s*maxY;
   return {ox,oy,s};
 }
-function applyPose(b, ox,oy,s, pose, instant){
+/* ---- rAF-Animations-Engine + Canvas-Renderer -------------------------------
+   Jeder Block hat Ist-Werte (_x,_y = Anker px, _s = Skala, _z = Tiefe, _op =
+   Opazität) und Ziel-Werte. Eine rAF-Schleife schiebt alle Werte gemeinsam ans
+   Ziel und zeichnet danach die GANZE Szene neu (Maler-Algorithmus, nach _z
+   sortiert). Kein DOM pro Block → keine Compositor-Layer → keine Desync. */
+function _bezier(x1,y1,x2,y2){
+  const cx=3*x1, bx=3*(x2-x1)-cx, ax=1-cx-bx;
+  const cy=3*y1, by=3*(y2-y1)-cy, ay=1-cy-by;
+  const fx=t=>((ax*t+bx)*t+cx)*t, fy=t=>((ay*t+by)*t+cy)*t, dfx=t=>(3*ax*t+2*bx)*t+cx;
+  return x=>{ let t=x; for(let i=0;i<6;i++){ const e=fx(t)-x; if(Math.abs(e)<1e-4)break; const d=dfx(t); if(Math.abs(d)<1e-6)break; t-=e/d; }
+    return fy(Math.max(0,Math.min(1,t))); };
+}
+const _ease=_bezier(.34,1.2,.4,1);   // wie die alte CSS-Kurve (leichtes Überschwingen)
+function _lerpCol(a,b,e){ return `rgb(${Math.round(a[0]+(b[0]-a[0])*e)},${Math.round(a[1]+(b[1]-a[1])*e)},${Math.round(a[2]+(b[2]-a[2])*e)})`; }
+function _faceColors(b){
+  if(b._colDur>0){ const e=_ease(Math.min(1,(performance.now()-b._colT0)/b._colDur));
+    return {top:_lerpCol(b._colFrom.top,b._colTo.top,e), front:_lerpCol(b._colFrom.front,b._colTo.front,e), side:_lerpCol(b._colFrom.side,b._colTo.side,e)}; }
+  return {top:`rgb(${b.col.top})`, front:`rgb(${b.col.front})`, side:`rgb(${b.col.side})`};
+}
+function drawScene(){
+  if(!sceneRect) return;
+  ctx.setTransform(_dpr,0,0,_dpr,0,0);
+  ctx.clearRect(0,0,sceneRect.width,sceneRect.height);
+  ctx.lineJoin='round';
+  const list=[...allBlocks].filter(b=>!b.dead && b._x!=null && b._op>0.01).sort((a,b)=>a._z-b._z);
+  for(const b of list){
+    ctx.globalAlpha=Math.min(1,b._op);
+    const col=_faceColors(b), s=b._s, ox=b._x, oy=b._y;
+    const trace=pts=>{ ctx.beginPath(); ctx.moveTo(ox+s*pts[0].x, oy+s*pts[0].y);
+      for(let i=1;i<4;i++) ctx.lineTo(ox+s*pts[i].x, oy+s*pts[i].y); ctx.closePath(); };
+    for(const f of b.faces){
+      trace(f.pts);
+      ctx.fillStyle = f.key==='top'?col.top : f.key==='front'?col.front : col.side;
+      ctx.fill();
+      if(f.grid){
+        ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1; const G=f.grid, o=G.o; ctx.beginPath();
+        for(let i=1;i<G.n1;i++){ const fr=i/G.n1; ctx.moveTo(ox+s*(o.x+G.e1.x*fr), oy+s*(o.y+G.e1.y*fr)); ctx.lineTo(ox+s*(o.x+G.e1.x*fr+G.e2.x), oy+s*(o.y+G.e1.y*fr+G.e2.y)); }
+        for(let i=1;i<G.n2;i++){ const fr=i/G.n2; ctx.moveTo(ox+s*(o.x+G.e2.x*fr), oy+s*(o.y+G.e2.y*fr)); ctx.lineTo(ox+s*(o.x+G.e2.x*fr+G.e1.x), oy+s*(o.y+G.e2.y*fr+G.e1.y)); }
+        ctx.stroke();
+      }
+      trace(f.pts);
+      ctx.strokeStyle=b.cube?'rgba(0,0,0,0.4)':'rgba(0,0,0,0.16)'; ctx.lineWidth=1; ctx.stroke();
+    }
+  }
+  ctx.globalAlpha=1;
+}
+let animRAF=null, _drawPending=false;
+function animTick(){
+  const now=performance.now(); let any=false;
+  allBlocks.forEach(b=>{
+    if(b._dur>0){ let t=(now-b._t0)/b._dur, done=t>=1; if(done)t=1; const e=_ease(t);
+      b._x=b._sx+(b._tx-b._sx)*e; b._y=b._sy+(b._ty-b._sy)*e; b._s=b._ss+(b._ts-b._ss)*e; b._z=b._sz+(b._tz-b._sz)*e;
+      if(done){ b._x=b._tx;b._y=b._ty;b._s=b._ts;b._z=b._tz; b._dur=0; } else any=true; }
+    if(b._opDur>0){ let t=(now-b._opT0)/b._opDur, done=t>=1; if(done)t=1;
+      b._op=b._opFrom+(b._opTo-b._opFrom)*t; if(done){ b._op=b._opTo; b._opDur=0; } else any=true; }
+    if(b._colDur>0){ if(now-b._colT0>=b._colDur){ b.col=b._colTo; b._colDur=0; } else any=true; }
+  });
+  drawScene();
+  animRAF = any ? requestAnimationFrame(animTick) : null;
+}
+function startAnim(){ if(animRAF==null) animRAF=requestAnimationFrame(animTick); }
+function requestDraw(){ if(animRAF!=null||_drawPending) return; _drawPending=true; requestAnimationFrame(()=>{ _drawPending=false; if(animRAF==null) drawScene(); }); }
+function snapBlock(b){ if(b._dur>0){ b._x=b._tx;b._y=b._ty;b._s=b._ts;b._z=b._tz; b._dur=0; } if(b._opDur>0){ b._op=b._opTo; b._opDur=0; } if(b._colDur>0){ b.col=b._colTo; b._colDur=0; } }
+function setOpacity(b, target, durMs){
+  if(durMs<=0 || reduced){ b._op=target; b._opDur=0; requestDraw(); return; }
+  b._opFrom=b._op; b._opTo=target; b._opT0=performance.now(); b._opDur=durMs; startAnim();
+}
+function applyPose(b, ox,oy,s, pose, instant, p){
   const q=proj(pose.lx,pose.ly,pose.lz);
   const x=ox+s*q.x, y=oy+s*q.y;
-  const depth=Math.round(DEPTH(pose.lx,pose.ly,pose.lz)*4);
-  b._zRest=Z_BASE+depth;
-  const moved=(b._x!=null)&&(Math.abs(x-b._x)+Math.abs(y-b._y)>1.5);
-  if(instant){
-    const t=b.el.style.transition; b.el.style.transition='none';
-    b.el.style.transform=`translate(${x}px,${y}px) scale(${s})`;
-    void b.el.offsetWidth; b.el.style.transition=t;
-    b.el.style.zIndex=b._zRest;
-  } else {
-    b.el.style.transform=`translate(${x}px,${y}px) scale(${s})`;
-    b.el.style.zIndex = moved ? (Z_TRANSIT+depth) : b._zRest;
+  const z=Z_BASE+colZ(p)+DEPTH(pose.lx,pose.ly,pose.lz)*4;
+  if(instant || b._x==null){            // erste Pose / Sofort-Layout → ohne Animation setzen
+    b._x=b._tx=x; b._y=b._ty=y; b._s=b._ts=s; b._z=b._tz=z; b._dur=0;
+    requestDraw(); return;
   }
-  b._x=x; b._y=y; b._s=s;
-  return moved && !instant;
+  if(b._tx!=null && Math.abs(x-b._tx)+Math.abs(y-b._ty)<0.5 && Math.abs(s-b._ts)<0.002 && Math.abs(z-b._tz)<0.5) return; // Ziel unverändert
+  b._sx=b._x; b._sy=b._y; b._ss=b._s; b._sz=b._z;            // ab Ist-Pose weiter-easen
+  b._tx=x; b._ty=y; b._ts=s; b._tz=z;
+  b._t0=performance.now(); b._dur=Math.max(1,dCur*1000);
+  startAnim();
 }
 function layout(instant){
   refreshRects();
-  let anyMoved=false; const borns=[];
   for(let p=0;p<N;p++){
     const items=gatherColumn(p);
     const ct=columnTransform(p,items);
     for(const [b,pose] of items){
       if(!b.born){
-        b.born=true; b.el.style.opacity='0';
-        applyPose(b,ct.ox,ct.oy,ct.s,pose,true);   // setzt sofort das echte Tiefen-z
-        if(!instant) borns.push(b);
-        requestAnimationFrame(()=>{ b.el.style.opacity='1'; });
-      } else if(applyPose(b,ct.ox,ct.oy,ct.s,pose,instant)) anyMoved=true;
+        b.born=true;
+        applyPose(b,ct.ox,ct.oy,ct.s,pose,true,p);   // sofort an Ziel-Pose + echtes Tiefen-z
+        if(instant) b._op=1; else { b._op=0; setOpacity(b,1,250); }
+      } else applyPose(b,ct.ox,ct.oy,ct.s,pose,instant,p);
     }
   }
-  // Neue Blöcke nur dann in die Transit-Ebene heben, wenn sich Nachbarn bewegen
-  // (sonst würden sie dahinter rendern). Bewegt sich nichts — z. B. ein einzelner,
-  // verstreuter Einer — behalten sie ihr echtes Tiefen-z und verdecken korrekt.
-  if(anyMoved){ borns.forEach(b=>{ b.el.style.zIndex=Z_TRANSIT+(b._zRest-Z_BASE); }); scheduleZSettle(); }
+  requestDraw();
 }
 
 /* =========================================================================
@@ -555,21 +612,14 @@ function settle(){            // verkettete Kaskade sofort komplett abarbeiten
     const cs=cleanups; cleanups=[];
     cs.forEach(c=>{ clearTimeout(c.id); try{ c.fn(); }catch(e){} });
   }
-}
-let zTok=null;
-function applyRestingZ(){ zTok=null; allBlocks.forEach(b=>{ if(b.el&&b._zRest!=null) b.el.style.zIndex=b._zRest; }); }
-function scheduleZSettle(){
-  if(reduced){ applyRestingZ(); return; }
-  if(zTok){ clearTimeout(zTok.id); cleanups=cleanups.filter(c=>c!==zTok); }
-  zTok=later(applyRestingZ, dCur*1000+90);
+  allBlocks.forEach(snapBlock);   // laufende rAF-Animationen auf ihr Ziel springen lassen
+  requestDraw();
 }
 function emanate(b, src){     // frischen Block sofort an Quell-Pose setzen (Aufspalten)
-  b.born=true;
-  if(!src || src.x==null){ b._x=0;b._y=0;b._s=1; return; }
-  b._x=src.x; b._y=src.y; b._s=src.s;
-  const t=b.el.style.transition; b.el.style.transition='none'; b.el.style.opacity='1';
-  b.el.style.transform=`translate(${src.x}px,${src.y}px) scale(${src.s})`;
-  void b.el.offsetWidth; b.el.style.transition=t;
+  b.born=true; b._op=1;
+  if(!src || src.x==null){ b._x=b._tx=0; b._y=b._ty=0; b._s=b._ts=1; b._z=b._tz=Z_BASE; b._dur=0; requestDraw(); return; }
+  b._x=b._tx=src.x; b._y=b._ty=src.y; b._s=b._ts=src.s; b._z=b._tz=(src.z!=null?src.z:Z_BASE); b._dur=0;
+  requestDraw();
 }
 
 /* =========================================================================
@@ -584,44 +634,46 @@ function flashGain(p, label){
 function pushUnit(p){ M[p].push(newBlock(p)); }     // einen massiven Block oben anlegen
 function addAtPlace(p){ pushUnit(p); layout(false); cascadeUp(p); }
 
-// Jede Stufe ist jetzt eine vollständige Übergabe (auch Einer→Stange bildet eine
-// MASSIVE Stange per Hand-off). Die nächste Stufe darf erst starten, wenn diese
-// Übergabe komplett abgeschlossen ist (Quellblöcke entfernt, Zielblock sichtbar),
-// sonst greift Stange→Platte die noch entstehende Stange ab und die Einer bleiben
-// verwaist zurück.
-function staggerFor(p){ return dCur*1000 + 70; }
+// Jede Stufe ist eine vollständige Übergabe (auch Einer→Stange bildet eine
+// MASSIVE Stange per Hand-off). Die nächste Stufe wird NICHT auf einem parallelen
+// Timer gestartet (das lief mit dem Abschluss-Timer der laufenden Übergabe in ein
+// Wettrennen → die frisch gebildete Stange flog der Platte hinterher), sondern
+// erst aus dem Abschluss-Callback der aktuellen Übergabe heraus. So stehen beim
+// Start der nächsten Stufe garantiert ALLE 10 Quellblöcke ruhend am Platz und
+// fliegen gemeinsam los.
 function cascadeUp(p){
   if(p>N-2 || countAt(p)<10) return;
-  bundleUp(p); layout(false);
-  if(p<N-2) later(()=>cascadeUp(p+1), staggerFor(p));
+  bundleUp(p, ()=>{ if(p<N-2) cascadeUp(p+1); });
+  layout(false);
 }
 // 10 Blöcke der Stelle p verschmelzen zu 1 Block der Stelle p+1
-function bundleUp(p){
+function bundleUp(p, onDone){
   flashGain(p+1, '+1');
   const lows=M[p].splice(0,10);
-  const hi=newBlock(p+1); hi.born=true; hi.el.style.opacity='0';
+  const hi=newBlock(p+1); hi.born=true; hi._op=0;
   M[p+1].push(hi); const slot=M[p+1].length-1;
   const tp=tilePoses(p+1, slot);
   lows.forEach((b,k)=>{ setColor(b,p+1); flying.push({b, place:p+1, lx:tp[k].lx, ly:tp[k].ly, lz:tp[k].lz}); });
   const t=dCur*1000;
-  later(()=>{ hi.el.style.opacity='1'; }, t*0.72);
+  later(()=>{ setOpacity(hi,1,250); }, t*0.72);
   later(()=>{                       // Übergabe abschließen: die 10 Teile verschmelzen
     flying=flying.filter(f=>!lows.includes(f.b));
-    lows.forEach(b=>{ b.el.style.opacity='0'; later(()=>destroy(b),180); });
-    hi.el.style.opacity='1'; layout(true);
+    lows.forEach(b=>{ setOpacity(b,0,180); later(()=>destroy(b),180); });
+    hi._op=1; layout(true);
+    if(onDone) onDone();            // nächste Stufe erst JETZT (Stange ruht sicher)
   }, t+30);
 }
 
-function popUnit(p){ const b=M[p].pop(); if(b){ b.el.style.opacity='0'; later(()=>destroy(b),200);} }
+function popUnit(p){ const b=M[p].pop(); if(b){ setOpacity(b,0,200); later(()=>destroy(b),200);} }
 function removeAtPlace(p){ if(countAt(p)===0) borrowDown(p+1); popUnit(p); layout(false); }
 // 1 Block der Stelle p in 10 Blöcke der Stelle p-1 aufspalten
 function borrowDown(p){
   if(countAt(p)===0) borrowDown(p+1);
   flashGain(p-1, '+10');
   const hi=M[p].pop();
-  const src={x:hi._x, y:hi._y, s:hi._s};
+  const src={x:hi._x, y:hi._y, s:hi._s, z:hi._z};
   for(let k=0;k<10;k++){ const b=newBlock(p-1); setColor(b,p-1); emanate(b,src); M[p-1].push(b); }
-  hi.el.style.opacity='0'; later(()=>destroy(hi),180);
+  setOpacity(hi,0,180); later(()=>destroy(hi),180);
 }
 
 /* =========================================================================
@@ -629,7 +681,7 @@ function borrowDown(p){
    ========================================================================= */
 function clearAll(){
   cleanups.forEach(c=>{ if(c&&c.id) clearTimeout(c.id); }); cleanups=[];
-  flying=[]; blocksEl.innerHTML='';
+  flying=[]; allBlocks.clear(); requestDraw();   // Canvas leeren
   M={}; for(let p=0;p<N;p++) M[p]=[];
 }
 function rebuildFromValue(v){
@@ -716,7 +768,10 @@ function updateGuards(){
 function placeAction(p, d){
   const mag=pow10(p), oldV=value, newV=value+d*mag;
   if(newV<0||newV>MAX) return;
-  settle();
+  // Plus-Aktionen komponieren mit laufenden Kaskaden (cascadeUp prüft die
+  // Anzahl erst beim Feuern) — nur Rückwärts braucht einen festen Endzustand,
+  // sonst würde jeder Tipp/Halten die Bündel-Animation sofort abwürgen.
+  if(d<0) settle();
   value=newV; dCur=dur(); setDur(dCur);
   rollOdometer(oldV,newV); setDigits(); updateGuards();
   if(reduced){ rebuildFromValue(value); return; }
@@ -900,6 +955,10 @@ function start(){
 }
 if(document.readyState==='complete'||document.readyState==='interactive') setTimeout(start,30);
 else window.addEventListener('DOMContentLoaded',start);
+
+// Debug-Zugriff für automatisierte Tests (Blöcke liegen jetzt im Canvas, nicht im DOM).
+window.__dbg={ value:()=>value,
+  blocks:()=>[...allBlocks].filter(b=>!b.dead).map(b=>({id:b.id,place:b.place,x:Math.round(b._x),y:Math.round(b._y),s:+(+b._s).toFixed(3),z:Math.round(b._z),op:+(+b._op).toFixed(2),w:b.dim.w})) };
 })();
 </script>
 </body>
