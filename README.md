@@ -42,7 +42,9 @@ Eine **Zielzahl** wird gezeigt und soll mit +/− unter den Spalten gelegt werde
 
 Die Blöcke einer Zahl liegen **gemischt in einer gemeinsamen Fläche** – in zufälliger
 Reihenfolge, in echten Größenverhältnissen, Stangen mal längs, mal quer. Die Zahl wird
-mit einem **Ziffernrad pro Stelle** (▲/▼) eingestellt.
+wie eine **schriftliche Addition** eingestellt: eine Zeile pro Stelle (▲/▼), die den
+**Stellenwert** zeigt – 8 Stangen sind **80**, nicht 8 –, darunter Strich und Summe
+(`000 + 80 + 4 = 084`).
 - Richtig: Die Blöcke hüpfen und sortieren sich danach nach Stellen (höchste links).
 - Falsch: Die falschen Stellen werden rot markiert; die Räder bleiben zum Korrigieren stehen.
 - Bis 4 Stellen (Zehntausender-Türme würden den Rest unlesbar klein machen).
@@ -53,7 +55,7 @@ mit einem **Ziffernrad pro Stelle** (▲/▼) eingestellt.
 - **Tastatur:** `↑` +1 · `↓` −1 · Zifferntasten erhöhen, `q w e r t` verringern
   (von der höchsten zur niedrigsten Stelle) — Taste halten zum Zählen.
 - **Stellen:** oben 2, 3, 4 oder 5 wählen.
-- **Lesen:** Zifferntasten erhöhen, `q w e r` verringern die Ziffernräder, `Enter` prüft.
+- **Lesen:** Zifferntasten erhöhen, `q w e r` verringern die Zeilen (oben → unten), `Enter` prüft.
 
 ## Technik
 
