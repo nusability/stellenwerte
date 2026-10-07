@@ -24,16 +24,28 @@ der Wahrheit. Bündeln/Entbündeln (Übertrag und Borgen) wird sichtbar gemacht 
 einer Stelle wandern zusammen, fügen sich zur Form der nächsten Stelle und **verschmelzen**
 (und umgekehrt beim Borgen).
 
-## Spielmodus
+## Spielmodi
 
-Oben zwischen **Entdecken** (freies Erkunden, wie oben beschrieben) und **🎯 Spielen** wechseln.
-Im Spiel erscheint eine **Zielzahl**, die mit den Blöcken gelegt werden soll. Klicker,
-Stellenwert-Summe und Kabel sind dabei ausgeblendet – die Zahl muss gelegt, nicht abgelesen werden.
+Oben zwischen **Entdecken** (freies Erkunden, wie oben beschrieben), **🎯 Legen** und
+**🔍 Lesen** wechseln. In beiden Spielen sind Klicker, Stellenwert-Summe und Kabel
+ausgeblendet. Für richtige Antworten gibt es Konfetti und einen ⭐, weiter geht es mit
+**Nächste Zahl**. Geprüft wird mit **Prüfen** (oder `Enter`).
 
-- **Prüfen** (oder `Enter`): Ist es richtig, gibt es Konfetti, die Spalten leuchten der Reihe
-  nach auf, die Blöcke hüpfen, und es gibt einen ⭐. Weiter geht es mit **Nächste Zahl**.
-- Ist es falsch, wird gezeigt, welche Zahl gelegt wurde. Danach werden die Blöcke
+### 🎯 Legen – Zahl → Blöcke
+
+Eine **Zielzahl** wird gezeigt und soll mit +/− unter den Spalten gelegt werden.
+- Richtig: Die Spalten leuchten der Reihe nach auf, und die Blöcke hüpfen.
+- Falsch: Es wird gezeigt, welche Zahl gelegt wurde. Danach werden die Blöcke
   zurückgesetzt, und dieselbe Zielzahl bleibt stehen.
+
+### 🔍 Lesen – Blöcke → Zahl
+
+Die Blöcke einer Zahl liegen **gemischt in einer gemeinsamen Fläche** – in zufälliger
+Reihenfolge, in echten Größenverhältnissen, Stangen mal längs, mal quer. Die Zahl wird
+mit einem **Ziffernrad pro Stelle** (▲/▼) eingestellt.
+- Richtig: Die Blöcke hüpfen und sortieren sich danach nach Stellen (höchste links).
+- Falsch: Die falschen Stellen werden rot markiert; die Räder bleiben zum Korrigieren stehen.
+- Bis 4 Stellen (Zehntausender-Türme würden den Rest unlesbar klein machen).
 
 ## Bedienung
 
@@ -41,6 +53,7 @@ Stellenwert-Summe und Kabel sind dabei ausgeblendet – die Zahl muss gelegt, ni
 - **Tastatur:** `↑` +1 · `↓` −1 · Zifferntasten erhöhen, `q w e r t` verringern
   (von der höchsten zur niedrigsten Stelle) — Taste halten zum Zählen.
 - **Stellen:** oben 2, 3, 4 oder 5 wählen.
+- **Lesen:** Zifferntasten erhöhen, `q w e r` verringern die Ziffernräder, `Enter` prüft.
 
 ## Technik
 
